@@ -274,6 +274,16 @@ h1 span{color:#b98cff}
 .lt.dim{opacity:.6;cursor:default;filter:grayscale(.6);box-shadow:0 2px 0 #dfe2ee}
 .lt.dim:active{transform:none}
 .lt .go{font-weight:900;font-size:14px;color:#fff;background:var(--lc);border-radius:999px;padding:6px 12px;white-space:nowrap}
+
+/* ---- combo banner: always above flipping stones ---- */
+.toast{z-index:40;pointer-events:none}
+.combo{position:absolute;left:50%;top:-22px;z-index:50;pointer-events:none;transform:translateX(-50%);white-space:nowrap;
+  font-weight:900;font-size:22px;color:#5a2a00;background:linear-gradient(#fff3a0,#ffc21f);border:3px solid #fff;border-radius:999px;padding:6px 18px;
+  box-shadow:0 4px 0 #c98a00,0 10px 22px rgba(0,0,0,.35);opacity:0}
+.combo.bad{color:#fff;background:linear-gradient(#b98cff,#7a3fd6);box-shadow:0 4px 0 #4e2296,0 10px 22px rgba(0,0,0,.35)}
+.combo b{font-size:26px;margin-right:2px}
+.combo.go{animation:combo 1.5s cubic-bezier(.2,.8,.2,1) forwards}
+@keyframes combo{0%{opacity:0;transform:translate(-50%,10px) scale(.5)}14%{opacity:1;transform:translate(-50%,0) scale(1.12)}24%{transform:translate(-50%,0) scale(1)}78%{opacity:1;transform:translate(-50%,-4px) scale(1)}100%{opacity:0;transform:translate(-50%,-14px) scale(.96)}}
 </style>
 </head>
 <body>
@@ -288,6 +298,7 @@ h1 span{color:#b98cff}
   <div class="boardwrap">
     <div class="board" id="board"></div>
     <div class="toast" id="toast"></div>
+    <div class="combo" id="combo"></div>
     <div class="count" id="count"></div>
   </div>
   <div class="tip" id="tip"></div>
@@ -560,6 +571,7 @@ function render(anim){
   $('pW').className='p'+(S.turn===WHITE&&!S.over?' on':'');$('pB').className='p r'+(S.turn===BLACK&&!S.over?' on':'');
 }
 function tip(t){$('tip').textContent=t;}
+function combo(n,mine){const e=$('combo');e.className='combo'+(mine?'':' bad');e.innerHTML=mine?`<b>${n}</b>칸 방어! 대박!`:`<b>${n}</b>칸 감염…!`;void e.offsetWidth;e.classList.add('go');}
 function toast(t,ms=900){const e=$('toast');e.textContent=t;e.classList.add('on');setTimeout(()=>e.classList.remove('on'),ms);}
 
 /* =====================================================================
@@ -877,7 +889,7 @@ function play(i){
   const x=i%N,y=(i-x)/N,dist=a=>Math.max(Math.abs(a%N-x),Math.abs(Math.floor(a/N)-y)),order=r.flipped.slice().sort((a,b)=>dist(a)-dist(b)),maxD=dist(order[order.length-1]);
   S=r.state;render({placed:i,flipped:r.flipped,order});
   const n=r.flipped.length;
-  if(n>=5)toast(control[who]==='human'?`${n}칸 방어! 대박!`:`${n}칸 감염…!`);
+  if(n>=5)combo(n,control[who]==='human');
   setTimeout(()=>{
     if(g!==gid)return;
     busy=false;
