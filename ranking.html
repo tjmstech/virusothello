@@ -203,7 +203,7 @@ function render(){
     row.appendChild(el('div','rk',cls?`${i+1}`:`${r.rank}`));
     const bd=el('div','bd');bd.innerHTML=badgeSVG(t,isCh);row.appendChild(bd);
     const mid=el('div');mid.appendChild(el('div','nm',r.id+r.name));
-    mid.appendChild(el('div','sub',`${t[0]} · ${r.games||0}전 ${r.wins||0}승 ${Math.max(0,(r.games||0)-(r.wins||0))}패`+(cls?` · 전교 ${r.rank}위`:'')+(admin&&r.uid===''?' · 초기화됨':'')));row.appendChild(mid);
+    mid.appendChild(el('div','sub',`${t[0]} · ${r.wins||0}승 ${Math.max(0,(r.games||0)-(r.wins||0))}패`+(cls?` · 전교 ${r.rank}위`:'')+(admin&&r.uid===''?' · 초기화됨':'')));row.appendChild(mid);
     const pt=el('div','pt');pt.style.color=t[3];pt.innerHTML=`<b>${r.points}</b><small>점</small>`;row.appendChild(pt);
     if(admin)row.appendChild(tools(r));
     L.appendChild(row);

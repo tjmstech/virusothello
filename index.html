@@ -257,9 +257,9 @@ h1 span{color:#b98cff}
 .lt:active{transform:translateY(3px);box-shadow:0 1px 0 #c9d0f2}
 .lt .ic{width:46px;height:46px;border-radius:50%;position:relative;background:radial-gradient(circle at 50% 42%,#3d394f,#17151f 62%,#07060b);box-shadow:0 0 0 3px var(--lc),0 3px 0 rgba(0,0,0,.3);margin-left:4px}
 .lt .ic svg{position:absolute;inset:0;width:100%;height:100%}
-.lt .tx b{display:flex;align-items:center;gap:6px;font-weight:900;font-size:18px;color:var(--lc2);line-height:1.2;white-space:nowrap}
+.lt .tx b{display:block;font-weight:900;font-size:18px;color:var(--lc2);line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .lt .tx span{display:block;font-size:12px;font-weight:700;color:#6a76b0;line-height:1.35;margin-top:1px}
-.lt .pips{display:inline-flex;gap:3px;margin:0}
+.lt .pips{display:flex;gap:3px;margin:3px 0 2px;justify-content:flex-start}
 .lt .pips i{width:10px;height:5px;border-radius:999px;background:#e6e9f8}
 .lt .pips i.on{background:var(--lc)}
 .lt .pt{min-width:70px;text-align:center;border-radius:14px;padding:5px 6px;background:#effbf3;border:2px solid #bfeccd}
@@ -270,8 +270,9 @@ h1 span{color:#b98cff}
 .lt .pt.none{background:#f2f3f8;border-color:#e0e3ef}.lt .pt.none .w,.lt .pt.none .k{color:#9aa2c4}
 .lt .after{grid-column:1/-1;display:flex;align-items:center;gap:6px;margin:2px -2px -4px 4px;padding:5px 10px;border-radius:10px;background:#effbf3;font-size:13px;font-weight:900;color:#1f9a48;white-space:nowrap}
 .lt .after.no{background:#f2f3f8;color:#9aa2c4}
-.lt .after em{font-style:normal;background:linear-gradient(#ffe14d,#ffb300);color:#6a3a00;border-radius:7px;padding:1px 7px;margin-left:auto}
-.lt.dim{opacity:.7}
+.lt .after em{font-style:normal;background:linear-gradient(#ffe14d,#ffb300);color:#6a3a00;border-radius:7px;padding:1px 8px}
+.lt.dim{opacity:.6;cursor:default;filter:grayscale(.6);box-shadow:0 2px 0 #dfe2ee}
+.lt.dim:active{transform:none}
 .lt .go{font-weight:900;font-size:14px;color:#fff;background:var(--lc);border-radius:999px;padding:6px 12px;white-space:nowrap}
 </style>
 </head>
@@ -805,7 +806,7 @@ function openLevels(m){
   if(rank){
     const st=standings(),isCh=st.ch.has(ME.id),ti=tierIdx(p),t=isCh?CHAL:TIERS[ti];
     const nxt=ti<TIERS.length-1?TIERS[ti+1]:null,w=nxt?Math.min(100,(p-TIERS[ti][1])/(nxt[1]-TIERS[ti][1])*100):100;
-    $('lvMe').innerHTML=`<div class="lvme"><div class="badge">${badgeSVG(t,isCh)}</div><div style="flex:1;min-width:0"><div class="nm">${t[0]} <b>${p}</b>점</div><div class="bar"><i style="width:${w}%"></i></div><small>${nxt?`${nxt[0]}까지 ${nxt[1]-p}점`:'상위 5% 안에 들면 챌린저'}</small></div></div>`;
+    $('lvMe').innerHTML=`<div class="lvme"><div class="badge">${badgeSVG(t,isCh)}</div><div style="flex:1;min-width:0"><div class="nm">${t[0]} <b>${p}</b>점</div><div class="bar"><i style="width:${w}%"></i></div><small>${nxt?`${nxt[0]}까지 ${nxt[1]-p}점`:isCh?`챌린저 · 전교 ${st.placed.findIndex(x=>x.id===ME.id)+1}위`:'상위 5% 안에 들면 챌린저'}</small></div></div>`;
   }else $('lvMe').innerHTML='';
   $('lvSub').textContent=rank?'이기면 점수가 크게 오르고, 지면 조금만 깎여요. 티어는 떨어지지 않아요.':'점수에 반영되지 않아요. 마음껏 연습하세요!';
   const L=$('lvList');L.textContent='';
@@ -817,16 +818,16 @@ function openLevels(m){
     if(rank){
       const w=winGain(lv,p),loss=Math.min(GAIN[lv][1],p-TIERS[tierIdx(p)][1]);
       if(w>0){
-        const np=p+w,up=tierIdx(np)>tierIdx(p);
+        const up=tierIdx(p+w)>tierIdx(p);
         right=`<div class="pt"><span class="k">승리</span><span class="w">+${w}<small>점</small></span><span class="l">패배 −${loss}</span></div>`;
-        after=`<span class="after">이기면 ${p}점 → ${np}점${up?`<em>${TIERS[tierIdx(np)][0]} 승급!</em>`:''}</span>`;
+        if(up)after=`<span class="after">이기면 <em>${TIERS[tierIdx(p+w)][0]} 승급!</em></span>`;
       }else{
-        right=`<div class="pt none"><span class="k">승리</span><span class="w">+0<small>점</small></span><span class="l">패배 −${loss}</span></div>`;
-        after=`<span class="after no">실버부터는 이겨도 점수가 오르지 않아요</span>`;b.classList.add('dim');
+        right=`<div class="pt none"><span class="k">랭크</span><span class="w" style="font-size:15px">불가</span></div>`;
+        after=`<span class="after no">실버부터는 연습 게임에서만 할 수 있어요</span>`;b.classList.add('dim');b.disabled=true;
       }
     }else right=`<span class="go">연습</span>`;
-    b.innerHTML=`<div class="ic">${MARK[BLACK]}</div><div class="tx"><b>${LVN[lv]}${pips}</b><span>${LVD[lv]}</span></div>${right}${after}`;
-    b.onclick=()=>{initAudio();startGame(lv,m);};L.appendChild(b);
+    b.innerHTML=`<div class="ic">${MARK[BLACK]}</div><div class="tx"><b>${LVN[lv]}</b>${pips}<span>${LVD[lv]}</span></div>${right}${after}`;
+    if(!b.disabled)b.onclick=()=>{initAudio();startGame(lv,m);};L.appendChild(b);
   }
   show('level');
 }
