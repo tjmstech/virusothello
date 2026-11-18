@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>바이러스 오델로 랭킹</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{--f:"Noto Sans KR","Noto Sans CJK KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;font-family:var(--f);font-weight:500;color:#e9f1ff}
+body{background:radial-gradient(circle at 50% 0,#33407e,#1a2247 55%,#10142e);background-attachment:fixed;padding:16px 10px 40px}
+.wrap{max-width:720px;margin:0 auto}
+h1{margin:4px 0 2px;text-align:center;font-weight:900;font-size:32px;text-shadow:0 4px 0 #0b0f24,0 0 18px rgba(142,91,255,.45)}
+h1 span{color:#b98cff}
+.top{display:flex;justify-content:center;align-items:center;gap:8px;margin:10px 0;flex-wrap:wrap}
+.chip{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.1);border:2px solid rgba(255,255,255,.2);border-radius:999px;padding:4px 12px;font-size:13px;font-weight:700}
+.dot{width:9px;height:9px;border-radius:50%;background:#888}.live.on .dot{background:#5dff6a;box-shadow:0 0 8px #5dff6a}
+a.play{background:linear-gradient(#8ee84f,#3fb81e);color:#fff;text-decoration:none;border:2px solid #fff;border-radius:999px;padding:4px 14px;font-size:13px;font-weight:900}
+.tabs{display:flex;gap:6px;justify-content:center;margin:6px 0 12px;flex-wrap:wrap}
+.tab{font-family:var(--f);font-weight:900;font-size:15px;border:2.5px solid rgba(255,255,255,.25);background:rgba(255,255,255,.06);color:#cfd9ff;border-radius:999px;padding:6px 16px;cursor:pointer}
+.tab.on{background:#fff;color:#27356b;border-color:#fff}
+select.tab{appearance:none;-webkit-appearance:none;padding-right:16px}
+.card{background:linear-gradient(#fff,#eef2ff);color:#27356b;border:4px solid #7f8fe0;border-radius:24px;box-shadow:0 7px 0 #3b4aa0,0 16px 36px rgba(0,0,0,.4);padding:8px}
+.sec{font-weight:900;font-size:14px;color:#7a3fd6;margin:8px 6px 2px}
+.row{display:grid;grid-template-columns:34px 44px minmax(0,1fr) auto;gap:8px;align-items:center;background:#fff;border:2.5px solid #dfe4fb;border-radius:16px;padding:6px 10px;margin:5px 0}
+.row.ch{border-color:#b98cff;background:linear-gradient(#f8f2ff,#fff)}
+.row.me{box-shadow:0 0 0 3px #ffd21f}
+.rk{font-weight:900;font-size:18px;text-align:center;color:#5a6aa8}
+.row.ch .rk{color:#7a3fd6}
+.bd{width:44px;height:44px}.bd svg{width:100%;height:100%;display:block}
+.nm{font-weight:900;font-size:17px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sub{font-size:12.5px;font-weight:700;color:#7a86c0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pt{text-align:right;white-space:nowrap}
+.pt b{display:block;font-weight:900;font-size:20px}
+.pt small{font-size:12px;font-weight:700;color:#7a86c0}
+.empty{text-align:center;padding:26px 10px;color:#7a86c0;font-weight:700}
+.wait{display:flex;flex-wrap:wrap;gap:6px;padding:4px 6px 8px}
+.wait span{font-size:13px;font-weight:700;background:#eef0fb;border-radius:999px;padding:3px 10px;color:#5a6aa8}
+.adm{margin-top:18px;text-align:center}
+button,input{font-family:var(--f)}
+.b{border:2px solid #fff;border-radius:10px;padding:4px 10px;font-size:13px;font-weight:900;color:#fff;background:linear-gradient(#8fa0f0,#5a6ad8);cursor:pointer}
+.b.red{background:linear-gradient(#ff7a6a,#e23a2a)}.b.yel{background:linear-gradient(#ffd84d,#f08a00)}.b.gray{background:linear-gradient(#b9c4cf,#8d98a6)}
+.panel{display:none;background:#fff;color:#27356b;border-radius:16px;padding:12px;margin-top:10px;text-align:left;font-size:14px}
+.panel input{font-size:15px;padding:7px 10px;border:2px solid #cfd6fa;border-radius:10px;margin:4px 4px 4px 0;max-width:100%}
+.tools{display:none;grid-column:1/-1;gap:6px;flex-wrap:wrap;align-items:center;padding-top:2px}
+.admin .tools{display:flex}
+.tools input{width:90px;font-size:14px;padding:4px 8px;border:2px solid #cfd6fa;border-radius:8px}
+.err{color:#e23a2a;font-weight:700;min-height:1em;margin-top:6px}
+.legend{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 10px;font-size:12px;font-weight:700;color:#aab2e0;margin-top:12px}
+.legend span{display:inline-flex;align-items:center;gap:4px}.legend i{width:18px;height:18px;display:inline-block}.legend i svg{width:100%;height:100%}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1><span>바이러스</span> 오델로 랭킹</h1>
+  <div class="top">
+    <span class="chip live" id="live"><span class="dot"></span><span id="liveT">연결 중…</span></span>
+    <span class="chip" id="cnt">가입 0명</span>
+    <a class="play" href="index.html">게임 하러 가기</a>
+  </div>
+  <div class="tabs">
+    <button class="tab on" id="tAll">전교</button>
+    <select class="tab" id="tCls"><option value="">반별 보기</option></select>
+  </div>
+  <div class="card"><div id="list"><div class="empty">랭킹을 불러오는 중…</div></div></div>
+  <div class="legend" id="legend"></div>
+
+  <div class="adm">
+    <button class="b gray" id="admBtn">관리자</button>
+    <div class="panel" id="login">
+      <div>관리자 로그인 (카우런 관리자와 같은 계정)</div>
+      <input id="em" type="email" placeholder="이메일" autocomplete="username">
+      <input id="pw" type="password" placeholder="비밀번호" autocomplete="current-password">
+      <button class="b" id="loginBtn">로그인</button>
+      <div class="err" id="loginErr"></div>
+    </div>
+    <div class="panel" id="adminBar">
+      <div><b>관리자 모드</b> · 학생마다 버튼이 나와요.</div>
+      <div style="margin-top:4px;line-height:1.6">
+        <b>비번 초기화</b>: 학생이 같은 학번·이름으로 새 비밀번호를 정해 다시 들어올 수 있어요. 점수와 티어는 그대로예요.<br>
+        <b>점수 저장</b>: 점수를 직접 고쳐요. <b>삭제</b>: 계정 기록을 지워요(되돌릴 수 없어요).
+      </div>
+      <button class="b gray" id="logoutBtn" style="margin-top:8px">관리자 모드 끄기</button>
+      <div class="err" id="admErr"></div>
+    </div>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+const C=window.COWRUN_CONFIG||{},DB=(C.databaseURL||'').replace(/\/+$/,'');
+const TIERS=[['아이언',0,'#b7bcc6','#5d626b'],['브론즈',100,'#e3a26b','#8f5326'],['실버',200,'#eef2f8','#8e9aab'],['골드',300,'#ffe07a','#c98a00'],['플래티넘',400,'#8cf0dc','#1f9a88'],['다이아',500,'#a6d4ff','#2a6fd6']];
+const CHAL=['챌린저',null,'#e0c4ff','#7a3fd6'],CH_RATE=.05,CH_MIN=500;
+function tierIdx(p){let k=0;for(let i=0;i<TIERS.length;i++)if(p>=TIERS[i][1])k=i;return k;}
+function badgeSVG(t,crown){const [,,lc,dc]=t;return `<svg viewBox="0 -2 64 66"><defs><linearGradient id="bg${dc.slice(1)}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${lc}"/><stop offset="1" stop-color="${dc}"/></linearGradient></defs><path d="M32 6 L54 18 V40 L32 58 L10 40 V18 Z" fill="url(#bg${dc.slice(1)})" stroke="${dc}" stroke-width="3" stroke-linejoin="round"/><path d="M32 14 L47 22 V38 L32 50 L17 38 V22 Z" fill="none" stroke="rgba(255,255,255,.75)" stroke-width="2.5" stroke-linejoin="round"/><path d="M32 26 L26.5 20 M32 26 L37.5 20 M32 26 L32 36" stroke="#fff" stroke-width="4" stroke-linecap="round" fill="none"/>${crown?'<path d="M20 9 L18 0 L25 5 L32 -2 L39 5 L46 0 L44 9 Z" transform="translate(0,1)" fill="#ffd21f" stroke="#c98a00" stroke-width="2" stroke-linejoin="round"/>':''}</svg>`;}
+function el(t,c,x){const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e;}
+function clsName(id){return `${id[0]}학년 ${+id.slice(1,3)}반`;}
+let data={},cls='',token=null,admin=false;
+let myId=null;try{myId=(JSON.parse(localStorage.getItem('voAuth')||'null')||{}).id||null;}catch(e){}
+$('legend').innerHTML=TIERS.map(t=>`<span><i>${badgeSVG(t)}</i>${t[0]} ${t[1]}+</span>`).join('')+`<span><i>${badgeSVG(CHAL,true)}</i>챌린저 = 다이아 중 상위 5%</span>`;
+
+function render(){
+  if(document.activeElement&&document.activeElement.tagName==='INPUT'&&$('list').contains(document.activeElement))return;
+  const all=Object.keys(data).map(id=>Object.assign({id},data[id])).filter(r=>r&&typeof r.points==='number'&&/^\d{5}$/.test(r.id));
+  const n=all.length,cap=Math.max(1,Math.floor(n*CH_RATE));
+  const placed=all.filter(r=>r.placeN>=3).sort((a,b)=>b.points-a.points||(a.t||0)-(b.t||0));
+  const ch=new Set(placed.filter(r=>r.points>=CH_MIN).slice(0,cap).map(r=>r.id));
+  placed.forEach((r,i)=>r.rank=i+1);
+  $('cnt').textContent=`가입 ${n}명 · 챌린저 정원 ${cap}명`;
+  // class options
+  const classes=[...new Set(all.map(r=>r.id.slice(0,3)))].sort();const sel=$('tCls');
+  if(sel.options.length-1!==classes.length){sel.innerHTML='<option value="">반별 보기</option>'+classes.map(c=>`<option value="${c}">${clsName(c+'00')}</option>`).join('');}
+  if(cls&&!classes.includes(cls))cls='';sel.value=cls;$('tAll').classList.toggle('on',!cls);sel.classList.toggle('on',!!cls);
+  const L=$('list');L.textContent='';
+  const view=placed.filter(r=>!cls||r.id.startsWith(cls)),waiting=all.filter(r=>r.placeN<3&&(!cls||r.id.startsWith(cls)));
+  if(!view.length&&!waiting.length){L.appendChild(el('div','empty',DB?'아직 기록이 없어요. 첫 번째 챌린저가 되어 보세요!':'config.js에 Firebase 주소가 없어요.'));return;}
+  let lastSec='';
+  view.forEach((r,i)=>{
+    const isCh=ch.has(r.id),sec=isCh?'챌린저':'';
+    if(i===0&&isCh){L.appendChild(el('div','sec','챌린저'));lastSec='ch';}
+    if(lastSec==='ch'&&!isCh){L.appendChild(el('div','sec','')).style.height='2px';lastSec='';}
+    const t=isCh?CHAL:TIERS[tierIdx(r.points)];
+    const row=el('div','row'+(isCh?' ch':'')+(r.id===myId?' me':''));
+    row.appendChild(el('div','rk',cls?`${i+1}`:`${r.rank}`));
+    const bd=el('div','bd');bd.innerHTML=badgeSVG(t,isCh);row.appendChild(bd);
+    const mid=el('div');mid.appendChild(el('div','nm',r.id+r.name));
+    mid.appendChild(el('div','sub',`${t[0]} · ${r.wins||0}승 ${r.games||0}판`+(cls?` · 전교 ${r.rank}위`:'')+(admin&&r.uid===''?' · 초기화됨':'')));row.appendChild(mid);
+    const pt=el('div','pt');pt.innerHTML=`<b style="color:${t[3]}">${r.points}</b><small>점</small>`;row.appendChild(pt);
+    if(admin)row.appendChild(tools(r));
+    L.appendChild(row);
+  });
+  if(waiting.length){
+    L.appendChild(el('div','sec',`배치고사 진행 중 ${waiting.length}명`));
+    if(admin)waiting.forEach(r=>{const row=el('div','row');row.appendChild(el('div','rk','-'));row.appendChild(el('div'));const m=el('div');m.appendChild(el('div','nm',r.id+r.name));m.appendChild(el('div','sub',`배치 ${r.placeN}/3 · ${r.placeW}승`+(r.uid===''?' · 초기화됨':'')));row.appendChild(m);row.appendChild(el('div'));row.appendChild(tools(r));L.appendChild(row);});
+    else{const w=el('div','wait');waiting.forEach(r=>w.appendChild(el('span','',r.id+r.name)));L.appendChild(w);}
+  }
+}
+function tools(r){
+  const t=el('div','tools');
+  const rs=el('button','b yel','비번 초기화');rs.onclick=()=>arm(rs,'정말 초기화?',()=>call('PATCH','/vo/players/'+r.id,{uid:'',gen:(r.gen||0)+1,cur:null}));
+  const inp=el('input');inp.type='number';inp.value=r.points;
+  const sv=el('button','b','점수 저장');sv.onclick=()=>{const v=Math.floor(+inp.value);if(!(v>=0&&v<=100000)){admErr('점수는 0~100000 사이 숫자예요.');return;}call('PATCH','/vo/players/'+r.id,{points:v});};
+  const del=el('button','b red','삭제');del.onclick=()=>arm(del,'한 번 더 누르면 삭제',()=>call('DELETE','/vo/players/'+r.id));
+  t.append(rs,inp,sv,del);return t;
+}
+function arm(b,txt,fn){if(b.dataset.arm){delete b.dataset.arm;fn();}else{const o=b.textContent;b.dataset.arm=1;b.textContent=txt;setTimeout(()=>{if(b.dataset.arm){delete b.dataset.arm;b.textContent=o;}},3000);}}
+function admErr(t){$('admErr').textContent=t||'';}
+async function call(method,path,body){
+  try{const r=await fetch(DB+path+'.json?auth='+encodeURIComponent(token),{method,headers:{'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined});
+    if(r.status===401||r.status===403){admErr(r.status===401?'로그인이 만료됐어요. 관리자 모드를 껐다가 다시 로그인해 주세요.':'권한이 없어요. Firebase 규칙의 관리자 UID를 확인해 주세요.');return;}
+    if(!r.ok){admErr('요청에 실패했어요 ('+r.status+').');return;}admErr('');}
+  catch(e){admErr('인터넷 연결을 확인해 주세요.');}
+}
+/* ---- live data ---- */
+function apply(path,val,patch){
+  const p=path.split('/').filter(Boolean);
+  if(!p.length){if(patch)Object.assign(data,val||{});else data=val||{};}
+  else if(p.length===1){if(val===null)delete data[p[0]];else if(patch)data[p[0]]=Object.assign(data[p[0]]||{},val);else data[p[0]]=val;}
+  else{data[p[0]]=data[p[0]]||{};if(val===null)delete data[p[0]][p[1]];else data[p[0]][p[1]]=val;}
+  for(const k in data)if(data[k]===null)delete data[k];
+  render();
+}
+function setLive(on,t){$('live').className='chip live'+(on?' on':'');$('liveT').textContent=t;}
+function connect(){
+  if(!DB){setLive(false,'설정 필요');render();return;}
+  const es=new EventSource(DB+'/vo/players.json');
+  es.addEventListener('put',e=>{const m=JSON.parse(e.data);apply(m.path,m.data,false);});
+  es.addEventListener('patch',e=>{const m=JSON.parse(e.data);apply(m.path,m.data,true);});
+  es.onopen=()=>setLive(true,'실시간');es.onerror=()=>setLive(false,'다시 연결 중…');
+}
+$('tAll').onclick=()=>{cls='';$('tCls').value='';$('tAll').classList.add('on');$('tCls').classList.remove('on');render();};
+$('tCls').onchange=()=>{cls=$('tCls').value;$('tAll').classList.toggle('on',!cls);$('tCls').classList.toggle('on',!!cls);render();};
+if(myId)cls=myId.slice(0,3);
+$('admBtn').onclick=()=>{const l=$('login');l.style.display=l.style.display==='block'?'none':'block';};
+$('loginBtn').onclick=async()=>{
+  $('loginErr').textContent='';if(!C.apiKey){$('loginErr').textContent='config.js에 apiKey가 없어요.';return;}
+  try{const r=await fetch('https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key='+encodeURIComponent(C.apiKey),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:$('em').value.trim(),password:$('pw').value,returnSecureToken:true})});
+    const j=await r.json();if(!r.ok||!j.idToken){$('loginErr').textContent='로그인에 실패했어요. 이메일과 비밀번호를 확인해 주세요.';return;}
+    token=j.idToken;admin=true;$('pw').value='';$('login').style.display='none';$('adminBar').style.display='block';$('admBtn').style.display='none';document.body.classList.add('admin');render();}
+  catch(e){$('loginErr').textContent='인터넷 연결을 확인해 주세요.';}
+};
+$('pw').addEventListener('keydown',e=>{if(e.key==='Enter')$('loginBtn').click();});
+$('logoutBtn').onclick=()=>{token=null;admin=false;$('adminBar').style.display='none';$('admBtn').style.display='inline-block';document.body.classList.remove('admin');render();};
+connect();
+</script>
+</body>
+</html>
