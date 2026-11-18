@@ -243,6 +243,36 @@ h1 span{color:#b98cff}
 #over .side b{font-size:36px}
 #over .btn{margin-top:8px}
 #over .promo{margin-top:6px;padding:4px 10px}
+
+/* ---- level tiles ---- */
+.lvme{display:flex;align-items:center;gap:10px;background:linear-gradient(#27356b,#1d2754);border-radius:16px;padding:8px 12px;margin:6px 0 8px;color:#fff;text-align:left}
+.lvme .badge{width:46px;height:46px}
+.lvme .nm{font-weight:900;font-size:17px;line-height:1.2}
+.lvme .nm b{font-weight:900}
+.lvme .bar{height:7px;border-radius:999px;background:rgba(255,255,255,.18);overflow:hidden;margin:4px 0 2px}
+.lvme .bar i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#5fe08a,#22b455)}
+.lvme small{font-size:12px;font-weight:700;color:#aab2e0}
+.lt{position:relative;display:grid;grid-template-columns:50px minmax(0,1fr) auto;gap:8px 8px;align-items:center;width:100%;margin-top:7px;padding:8px 8px 8px 6px;background:#fff;border:2.5px solid #dfe4fb;border-radius:18px;box-shadow:0 4px 0 #c9d0f2;font-family:var(--f);text-align:left;cursor:pointer;color:#27356b;overflow:hidden}
+.lt::before{content:"";position:absolute;left:0;top:0;bottom:0;width:6px;background:var(--lc)}
+.lt:active{transform:translateY(3px);box-shadow:0 1px 0 #c9d0f2}
+.lt .ic{width:46px;height:46px;border-radius:50%;position:relative;background:radial-gradient(circle at 50% 42%,#3d394f,#17151f 62%,#07060b);box-shadow:0 0 0 3px var(--lc),0 3px 0 rgba(0,0,0,.3);margin-left:4px}
+.lt .ic svg{position:absolute;inset:0;width:100%;height:100%}
+.lt .tx b{display:flex;align-items:center;gap:6px;font-weight:900;font-size:18px;color:var(--lc2);line-height:1.2;white-space:nowrap}
+.lt .tx span{display:block;font-size:12px;font-weight:700;color:#6a76b0;line-height:1.35;margin-top:1px}
+.lt .pips{display:inline-flex;gap:3px;margin:0}
+.lt .pips i{width:10px;height:5px;border-radius:999px;background:#e6e9f8}
+.lt .pips i.on{background:var(--lc)}
+.lt .pt{min-width:70px;text-align:center;border-radius:14px;padding:5px 6px;background:#effbf3;border:2px solid #bfeccd}
+.lt .pt .w{display:block;font-weight:900;font-size:24px;line-height:1.05;color:#1f9a48}
+.lt .pt .w small{font-size:13px;margin-left:1px}
+.lt .pt .k{display:block;font-size:11px;font-weight:900;color:#1f9a48;letter-spacing:.5px}
+.lt .pt .l{display:block;font-size:11.5px;font-weight:900;color:#e23a2a;margin-top:2px}
+.lt .pt.none{background:#f2f3f8;border-color:#e0e3ef}.lt .pt.none .w,.lt .pt.none .k{color:#9aa2c4}
+.lt .after{grid-column:1/-1;display:flex;align-items:center;gap:6px;margin:2px -2px -4px 4px;padding:5px 10px;border-radius:10px;background:#effbf3;font-size:13px;font-weight:900;color:#1f9a48;white-space:nowrap}
+.lt .after.no{background:#f2f3f8;color:#9aa2c4}
+.lt .after em{font-style:normal;background:linear-gradient(#ffe14d,#ffb300);color:#6a3a00;border-radius:7px;padding:1px 7px;margin-left:auto}
+.lt.dim{opacity:.7}
+.lt .go{font-weight:900;font-size:14px;color:#fff;background:var(--lc);border-radius:999px;padding:6px 12px;white-space:nowrap}
 </style>
 </head>
 <body>
@@ -327,6 +357,7 @@ h1 span{color:#b98cff}
 <div class="screen" id="level">
   <div class="card">
     <h2 id="lvTitle">난이도 선택</h2>
+    <div id="lvMe"></div>
     <div class="sub" id="lvSub"></div>
     <div id="lvList"></div>
     <button class="btn sec" data-go="main">뒤로</button>
@@ -768,13 +799,33 @@ async function doPw(){
 /* ---------- 난이도 목록 ---------- */
 function openLevels(m){
   mode=m;$('lvTitle').textContent=m==='rank'?'랭크 게임':'연습 게임';
-  const p=ME&&ME.rec?ME.rec.points:0;
-  $('lvSub').textContent=m==='rank'?'이기면 점수가 크게 오르고, 지면 조금 깎여요. 티어는 떨어지지 않아요.':'점수에 반영되지 않아요. 마음껏 연습하세요!';
+  const rank=m==='rank'&&ME&&ME.rec,p=rank?ME.rec.points:0;
+  const LC=['', ['#3fb81e','#2a8a10'],['#f08a00','#c46a00'],['#e23a2a','#b51f12'],['#8e5bff','#6a35d6']];
+  // 내 티어 띠
+  if(rank){
+    const st=standings(),isCh=st.ch.has(ME.id),ti=tierIdx(p),t=isCh?CHAL:TIERS[ti];
+    const nxt=ti<TIERS.length-1?TIERS[ti+1]:null,w=nxt?Math.min(100,(p-TIERS[ti][1])/(nxt[1]-TIERS[ti][1])*100):100;
+    $('lvMe').innerHTML=`<div class="lvme"><div class="badge">${badgeSVG(t,isCh)}</div><div style="flex:1;min-width:0"><div class="nm">${t[0]} <b>${p}</b>점</div><div class="bar"><i style="width:${w}%"></i></div><small>${nxt?`${nxt[0]}까지 ${nxt[1]-p}점`:'상위 5% 안에 들면 챌린저'}</small></div></div>`;
+  }else $('lvMe').innerHTML='';
+  $('lvSub').textContent=rank?'이기면 점수가 크게 오르고, 지면 조금만 깎여요. 티어는 떨어지지 않아요.':'점수에 반영되지 않아요. 마음껏 연습하세요!';
   const L=$('lvList');L.textContent='';
   for(let lv=1;lv<=4;lv++){
-    const b=document.createElement('button');b.className='btn lvb'+(lv>1?' l'+lv:'');
-    let g='';if(m==='rank'){const w=winGain(lv,p);g=`<span class="gain">승 +${w}<br>패 −${GAIN[lv][1]}</span>`;}
-    b.innerHTML=`${LVN[lv]}<small>${LVD[lv]}</small>${g}`;
+    const b=document.createElement('button');b.className='lt';
+    b.style.setProperty('--lc',LC[lv][0]);b.style.setProperty('--lc2',LC[lv][1]);
+    const pips=`<div class="pips">${[1,2,3,4].map(k=>`<i class="${k<=lv?'on':''}"></i>`).join('')}</div>`;
+    let right='',after='';
+    if(rank){
+      const w=winGain(lv,p),loss=Math.min(GAIN[lv][1],p-TIERS[tierIdx(p)][1]);
+      if(w>0){
+        const np=p+w,up=tierIdx(np)>tierIdx(p);
+        right=`<div class="pt"><span class="k">승리</span><span class="w">+${w}<small>점</small></span><span class="l">패배 −${loss}</span></div>`;
+        after=`<span class="after">이기면 ${p}점 → ${np}점${up?`<em>${TIERS[tierIdx(np)][0]} 승급!</em>`:''}</span>`;
+      }else{
+        right=`<div class="pt none"><span class="k">승리</span><span class="w">+0<small>점</small></span><span class="l">패배 −${loss}</span></div>`;
+        after=`<span class="after no">실버부터는 이겨도 점수가 오르지 않아요</span>`;b.classList.add('dim');
+      }
+    }else right=`<span class="go">연습</span>`;
+    b.innerHTML=`<div class="ic">${MARK[BLACK]}</div><div class="tx"><b>${LVN[lv]}${pips}</b><span>${LVD[lv]}</span></div>${right}${after}`;
     b.onclick=()=>{initAudio();startGame(lv,m);};L.appendChild(b);
   }
   show('level');
