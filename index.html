@@ -388,7 +388,7 @@ h1 span{color:#b98cff}
       5. 둘 다 더 둘 곳이 없으면 끝. <b>돌이 많은 쪽</b>이 이겨요.<br>
       6. <b>배치고사 3판</b>으로 시작 티어가 정해져요. 이기면 다음 판이 한 단계 어려워져요.<br>
       7. <b>랭크 게임</b>에서 이기면 점수가 크게 오르고, 지면 조금 깎여요. 티어는 떨어지지 않아요.<br>
-      8. 다이아 이상 중 점수 <b>상위 5%</b>만 챌린저가 될 수 있어요. 랭크 게임 도중 나가면 패배로 기록돼요.
+      8. 600점부터 <b>마스터</b>, 마스터 중 전체 인원의 <b>상위 4%</b>만 챌린저가 될 수 있어요. 랭크 게임 도중 나가면 패배로 기록돼요.
     </div>
     <div class="sub" style="text-align:left;margin:4px 2px 0">백신을 맞으면 우리 몸은 바이러스를 붙잡는 <b style="font-weight:900;color:#1f9a48">항체</b>를 미리 만들어 둬요. 이 게임의 흰 돌이 바로 그 항체예요!
     </div>
@@ -587,90 +587,104 @@ const ONLINE=!!(DBU&&KEY);
 const LVN=['','쉬움','보통','어려움','슈퍼 바이러스'];
 const LVD=['','실수투성이 왕초보 바이러스','좋은 자리를 아는 바이러스','내 응수까지 읽는 바이러스','몇 수 앞을 꿰뚫는 최강 바이러스'];
 // [이름, 최소 점수, 밝은 색, 진한 색]
-const TIERS=[['아이언',0,'#c9ced6','#5d626b'],['브론즈',100,'#f0b27a','#8f4f22'],['실버',200,'#f4f7fb','#7f8ca0'],['골드',300,'#ffe58a','#b77a00'],['플래티넘',400,'#9ff5e2','#16897a'],['다이아',500,'#b5dcff','#2560c9']];
-const CHAL=['챌린저',null,'#ffb8f0','#8a2bd6'];
+const TIERS=[['아이언',0,'#c9ced6','#5d626b'],['브론즈',100,'#f0b27a','#8f4f22'],['실버',200,'#f4f7fb','#7f8ca0'],['골드',300,'#ffe58a','#b77a00'],['플래티넘',400,'#9ff5e2','#16897a'],['다이아',500,'#b5dcff','#2560c9'],['마스터',600,'#e0c4ff','#8a2bd6']];
+const CHAL=['챌린저',null,'#fff1b0','#b07a10'];
 const GAIN={1:[20,10],2:[40,15],3:[60,15],4:[100,15]};   // [승리, 패배]
 const START=[0,100,200,300];                            // 배치 승수별 시작 점수
-const CH_RATE=.05,CH_MIN=500;
+const CH_RATE=.04,CH_MIN=600;
 function tierIdx(p){let k=0;for(let i=0;i<TIERS.length;i++)if(p>=TIERS[i][1])k=i;return k;}
-function winGain(lv,p){return lv===1&&p>=400?0:GAIN[lv][0];}   // 쉬움은 골드(399점)까지만 랭크 가능
+// 랭크로 할 수 있는 마지막 점수: 쉬움은 골드(399점)까지, 보통은 플래티넘(499점)까지
+const RANK_CAP={1:400,2:600};   // 쉬움은 골드까지, 보통은 다이아까지
+function rankLocked(lv,p){return RANK_CAP[lv]!=null&&p>=RANK_CAP[lv];}
+function winGain(lv,p){return rankLocked(lv,p)?0:GAIN[lv][0];}
 // [이름, 최소 점수, 대표 밝은 색, 대표 진한 색, 팔레트(밝음→어두움)]
-const PAL={
- '아이언':['#f1f3f6','#b4bac4','#6b717b','#34373e'],
- '브론즈':['#ffe2c2','#eda46a','#a5582a','#5a2a0e'],
- '실버':['#ffffff','#e3e9f2','#a3afc2','#5b6679'],
- '골드':['#fff8cf','#ffd84a','#e39400','#7d4800'],
- '플래티넘':['#effffb','#86f3dc','#19ad95','#0a5248'],
- '다이아':['#f5fcff','#a8dcff','#4b86ff','#1c2f9e'],
- '챌린저':['#fff0fb','#ff9be3','#a45bff','#3b0f78']
+// 티어 배지 (다이아부터 계속 움직여요)
+const ST={
+ '?':{lvl:0,pal:['#f3f4fb','#d6dbef','#8a93c2','#4a5280']},
+ '아이언':{lvl:0,pal:['#f1f3f6','#b4bac4','#6b717b','#34373e']},
+ '브론즈':{lvl:1,pal:['#ffe2c2','#eda46a','#a5582a','#5a2a0e']},
+ '실버':{lvl:2,pal:['#ffffff','#e3e9f2','#a3afc2','#5b6679']},
+ '골드':{lvl:3,pal:['#fff8cf','#ffd84a','#e39400','#7d4800']},
+ '플래티넘':{lvl:4,pal:['#effffb','#86f3dc','#19ad95','#0a5248']},
+ '다이아':{lvl:5,pal:['#f5fcff','#a8dcff','#4b86ff','#1c2f9e'],aura:'#5aa8ff'},
+ '마스터':{lvl:6,rainbow:1,pal:['#fff0fb','#ff9be3','#a45bff','#3b0f78'],frame:['#fff2a8','#ffb3ec','#8b45e6','#2a0a5e'],aura:'#e07bff',orbit:2},
+ '챌린저':{lvl:7,pal:['#fff','#fff','#888','#333'],frame:['#fffdf2','#ffe27a','#d9a23a','#7a4e10'],wing:['#fffdf2','#ffe27a','#d9a23a'],gem:['#fff','#bfe4ff','#2f7bff'],aura:'#fff1b0',orbit:3,ring:1,stars:8,
+   yGrad:'<stop offset="0" stop-color="#8fd0ff"/><stop offset=".5" stop-color="#2f6bff"/><stop offset="1" stop-color="#14309e"/>',yGlow:'#9fd2ff',
+   plateStops:an=>`<stop offset="0">${an('#ffffff;#fffaf0;#f4fbff;#ffffff',3)}</stop><stop offset=".5">${an('#f3efe6;#fff3dc;#e9f2fb;#f3efe6',3)}</stop><stop offset="1">${an('#c9bfae;#d9c39a;#aebccc;#c9bfae',3)}</stop>`,
+   frameStops:an=>`<stop offset="0">${an('#ffffff;#fffdf2;#fff6d6;#ffffff',2.2)}</stop><stop offset=".35">${an('#ffe27a;#fff0b0;#ffe27a;#ffe27a',2.2)}</stop><stop offset=".72" stop-color="#d9a23a"/><stop offset="1" stop-color="#7a4e10"/>`}
 };
-function badgeSVG(t,isCh){
-  const name=isCh?'챌린저':t[0],lvl=isCh?6:TIERS.findIndex(x=>x[0]===name);
-  const P=PAL[name]||['#f3f4fb','#d6dbef','#8a93c2','#4a5280'];
-  const u=(isCh?'C':'T')+Math.max(lvl,0)+(name==='?'||lvl<0?'q':'');
-  const fx=lvl>=5;                      // 다이아·챌린저: 움직이는 효과
+function badge(key){
+  const S=ST[key],lvl=S.lvl,P=S.pal,u='B'+[...key].map(c=>c.charCodeAt(0).toString(36)).join('');
+  const fx=lvl>=5;
   const sh='M32 4 L54 14 V34 Q54 49 32 61 Q10 49 10 34 V14 Z';
   const inner='M32 10 L48.5 17.5 V33.5 Q48.5 45 32 54.5 Q15.5 45 15.5 33.5 V17.5 Z';
   const Y='M32 31 L25.6 23.6 M32 31 L38.4 23.6 M32 31 L32 38.6';
-  // 판 색: 챌린저는 무지갯빛이 천천히 돌아요
-  const plateStops=isCh
-    ?`<stop offset="0"><animate attributeName="stop-color" values="#ffd1f4;#c9b2ff;#a9f0ff;#fff0a8;#ffd1f4" dur="4s" repeatCount="indefinite"/></stop>
-      <stop offset=".5"><animate attributeName="stop-color" values="#c45bff;#6f7bff;#3fd6ff;#ff7ad9;#c45bff" dur="4s" repeatCount="indefinite"/></stop>
-      <stop offset="1"><animate attributeName="stop-color" values="#4a12a0;#2b2a9e;#1b6aa8;#8a1a8a;#4a12a0" dur="4s" repeatCount="indefinite"/></stop>`
+  const anim=(vals,d)=>`<animate attributeName="stop-color" values="${vals}" dur="${d}s" repeatCount="indefinite"/>`;
+  const plate=S.plateStops?S.plateStops(anim):S.rainbow
+    ?`<stop offset="0">${anim('#ffd1f4;#c9b2ff;#a9f0ff;#fff0a8;#ffd1f4',4)}</stop><stop offset=".5">${anim('#c45bff;#6f7bff;#3fd6ff;#ff7ad9;#c45bff',4)}</stop><stop offset="1">${anim('#4a12a0;#2b2a9e;#1b6aa8;#8a1a8a;#4a12a0',4)}</stop>`
     :`<stop offset="0" stop-color="${P[0]}"/><stop offset=".45" stop-color="${P[1]}"/><stop offset="1" stop-color="${P[2]}"/>`;
-  const wing=(k)=>{
-    const y=17+k*8.5,len=10+(2-k)*3.2;
+  const F=S.frame||[P[0],P[1],P[2],P[3]];
+  const frame=S.frameStops?S.frameStops(anim):S.frameAnim
+    ?`<stop offset="0">${anim('#ffffff;#fff3b0;#ffd1f4;#ffffff',2.4)}</stop><stop offset=".35">${anim('#ffe27a;#ffb3ec;#a9f0ff;#ffe27a',2.4)}</stop><stop offset=".7" stop-color="#9a4ae6"/><stop offset="1" stop-color="#2a0a5e"/>`
+    :`<stop offset="0" stop-color="${F[0]}"/><stop offset=".3" stop-color="${F[1]}"/><stop offset=".7" stop-color="${F[2]}"/><stop offset="1" stop-color="${F[3]}"/>`;
+  const W=S.wing||(S.rainbow?['#ffd6f5','#b86bff','#3b0f78']:[P[0],P[1],P[2]]);
+  const G=S.gem||(S.rainbow?['#fff','#ffe27a','#ff6ad5']:['#fff',P[1],P[2]]);
+  const edge=F[3];
+  const wing=(k)=>{const y=17+k*8.5-(lvl>=7?3:0),len=10+(3-k)*3.2+(lvl>=7?2:0);
     const f=`M11.5 ${y} Q${11.5-len*.55} ${y-1.5} ${11.5-len} ${y-7} Q${11.5-len*.75} ${y+5.5} 11.5 ${y+7.5} Z`;
     const hl=`M11 ${y+1.5} Q${11-len*.45} ${y+.5} ${11-len*.85} ${y-4.5}`;
-    const one=`<path d="${f}" fill="url(#w${u})" stroke="${P[3]}" stroke-width="1.5" stroke-linejoin="round"/><path d="${hl}" fill="none" stroke="rgba(255,255,255,.65)" stroke-width="1.1" stroke-linecap="round"/>`;
-    return one+`<g transform="translate(64,0) scale(-1,1)">${one}</g>`;
-  };
-  let wings='';if(lvl>=3)wings+=wing(0);if(lvl>=4)wings+=wing(1);if(lvl>=6)wings+=wing(2);
-  const gem=(cx,cy,r)=>`<path d="M${cx} ${cy-r} L${cx+r*.85} ${cy} L${cx} ${cy+r} L${cx-r*.85} ${cy} Z" fill="url(#j${u})" stroke="${P[3]}" stroke-width="1.4" stroke-linejoin="round"/><path d="M${cx} ${cy-r} L${cx+r*.85} ${cy} L${cx} ${cy}Z" fill="rgba(255,255,255,.55)"/>`;
+    const one=`<path d="${f}" fill="url(#w${u})" stroke="${edge}" stroke-width="1.5" stroke-linejoin="round"/><path d="${hl}" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="1.1" stroke-linecap="round"/>`;
+    return one+`<g transform="translate(64,0) scale(-1,1)">${one}</g>`;};
+  const nW=lvl>=7?4:lvl>=6?3:lvl>=4?2:lvl>=3?1:0;let wings='';for(let k=0;k<nW;k++)wings+=wing(k);
+  const gem=(cx,cy,r)=>`<path d="M${cx} ${cy-r} L${cx+r*.85} ${cy} L${cx} ${cy+r} L${cx-r*.85} ${cy} Z" fill="url(#j${u})" stroke="${edge}" stroke-width="1.4" stroke-linejoin="round"/><path d="M${cx} ${cy-r} L${cx+r*.85} ${cy} L${cx} ${cy}Z" fill="rgba(255,255,255,.6)"/>`;
   let deco='';
-  if(lvl===1||lvl===2)deco+=`<circle cx="10" cy="15" r="2.7" fill="url(#j${u})" stroke="${P[3]}" stroke-width="1.3"/><circle cx="54" cy="15" r="2.7" fill="url(#j${u})" stroke="${P[3]}" stroke-width="1.3"/>`;
+  if(lvl===1||lvl===2)deco+=`<circle cx="10" cy="15" r="2.7" fill="url(#j${u})" stroke="${edge}" stroke-width="1.3"/><circle cx="54" cy="15" r="2.7" fill="url(#j${u})" stroke="${edge}" stroke-width="1.3"/>`;
   if(lvl===2)deco+=`<path d="M25.5 61.6 L32 65.2 L38.5 61.6" fill="none" stroke="${P[2]}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>`;
-  if(lvl>=5)deco+=gem(32,1.5,6.2);
+  if(lvl>=5)deco+=gem(32,1.5,lvl>=7?7.4:6.2);
   if(lvl>=6)deco+=gem(32,64.5,5);
+  if(lvl>=7)deco+=gem(13,9,3.4)+gem(51,9,3.4);
   const facets=lvl>=5?`<path d="M32 10 L23.5 22.5 L32 28.5 L40.5 22.5 Z M15.5 17.5 L23.5 22.5 M48.5 17.5 L40.5 22.5 M23.5 22.5 L15.5 33.5 M40.5 22.5 L48.5 33.5 M32 28.5 L32 54.5" fill="none" stroke="rgba(255,255,255,.32)" stroke-width="1.1"/>`:'';
-  // 반짝이는 빛줄기(대각선 띠)가 판 위를 지나가요: 플래티넘부터
-  const sweep=lvl>=4?`<rect x="-30" y="-10" width="14" height="90" fill="url(#s${u})" transform="rotate(25 32 32)"><animate attributeName="x" values="-30;-30;80" keyTimes="0;${lvl>=5?.35:.6};1" dur="${lvl>=6?2.2:lvl>=5?2.8:4}s" repeatCount="indefinite"/></rect>`:'';
-  // 별 반짝임 (4갈래 별), 챌린저는 둘레를 도는 빛 알갱이
-  const star=(x,y,s,d,dl)=>`<g transform="translate(${x} ${y})"><path d="M0 -${s} Q${s*.18} -${s*.18} ${s} 0 Q${s*.18} ${s*.18} 0 ${s} Q-${s*.18} ${s*.18} -${s} 0 Q-${s*.18} -${s*.18} 0 -${s} Z" fill="#fff"><animateTransform attributeName="transform" type="scale" values="0;1;0;0" keyTimes="0;.2;.45;1" dur="${d}s" begin="${dl}s" repeatCount="indefinite"/></path></g>`;
-  let fxBack='',fxFront='';
+  const sweep=lvl>=4?`<rect x="-30" y="-10" width="14" height="90" fill="url(#s${u})" transform="rotate(25 32 32)"><animate attributeName="x" values="-30;-30;80" keyTimes="0;${lvl>=7?.2:lvl>=5?.35:.6};1" dur="${lvl>=7?1.8:lvl>=6?2.2:lvl>=5?2.8:4}s" repeatCount="indefinite"/></rect>`:'';
+  const star=(x,y,s,d,dl,c='#fff')=>`<g transform="translate(${x} ${y})"><path d="M0 -${s} Q${s*.18} -${s*.18} ${s} 0 Q${s*.18} ${s*.18} 0 ${s} Q-${s*.18} ${s*.18} -${s} 0 Q-${s*.18} -${s*.18} 0 -${s} Z" fill="${c}"><animateTransform attributeName="transform" type="scale" values="0;1;0;0" keyTimes="0;.2;.45;1" dur="${d}s" begin="${dl}s" repeatCount="indefinite"/></path></g>`;
+  let back='',front='',ringBack='',ringFront='';
   if(fx){
-    const gc=isCh?'#e07bff':'#5aa8ff';
-    fxBack=`<path d="${sh}" fill="${gc}" filter="url(#b${u})" transform="translate(32 33) scale(1.08) translate(-32 -33)"><animate attributeName="opacity" values=".35;.9;.35" dur="${isCh?1.6:2.2}s" repeatCount="indefinite"/></path>`;
-    fxFront=star(4,6,4.2,2.4,0)+star(60,24,3.4,2.4,.8)+star(8,52,3,2.4,1.5);
-    if(isCh){
-      fxFront+=star(58,56,4,2,.4)+star(-4,30,3.2,2,1.2);
-      const orbit='M32 -6 A30 36 0 1 1 31.9 -6 Z';
-      fxFront+=`<circle r="2.2" fill="#fff6c2"><animateMotion dur="3.2s" repeatCount="indefinite" path="${orbit}"/></circle><circle r="1.6" fill="#a9f0ff"><animateMotion dur="3.2s" begin="-1.6s" repeatCount="indefinite" path="${orbit}"/></circle>`;
+    back=`<path d="${sh}" fill="${S.aura}" filter="url(#b${u})" transform="translate(32 33) scale(${lvl>=7?1.18:1.08}) translate(-32 -33)"><animate attributeName="opacity" values=".35;.9;.35" dur="${lvl>=6?1.6:2.2}s" repeatCount="indefinite"/></path>`;
+    const pts=[[4,6,4.2],[60,24,3.4],[8,52,3],[58,56,4],[-4,30,3.2],[66,4,3],[-6,58,2.6],[34,-8,2.8]];
+    const n=S.stars||(lvl>=6?5:3);
+    pts.slice(0,n).forEach((q,i)=>front+=star(q[0],q[1],q[2],2+(i%3)*.3,(i*.37)%1.6,i%3===2&&lvl>=7?'#ffe27a':'#fff'));
+    const orbit='M32 -6 A30 36 0 1 1 31.9 -6 Z',cols=['#fff6c2','#a9f0ff','#ffb3ec'];
+    for(let i=0;i<(S.orbit||0);i++)front+=`<circle r="${2.2-i*.3}" fill="${cols[i]}"><animateMotion dur="3.2s" begin="-${(i*3.2/(S.orbit)).toFixed(2)}s" repeatCount="indefinite" path="${orbit}"/></circle>`;
+    if(S.ring){
+      // 행성 고리: 뒤쪽 반은 배지 뒤로, 앞쪽 반은 배지 바깥 양옆에서만 보여서 감싸고 도는 것처럼 보여요
+      const ring=(clip)=>`<g transform="rotate(-12 32 40)" clip-path="url(#${clip}${u})"><ellipse cx="32" cy="40" rx="45" ry="12" fill="none" stroke="#ffe27a" stroke-opacity=".55" stroke-width="2.4"/><ellipse cx="32" cy="40" rx="45" ry="12" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-dasharray="14 160"><animate attributeName="stroke-dashoffset" values="0;-174" dur="1.6s" repeatCount="indefinite"/></ellipse></g>`;
+      ringBack=ring('rt');ringFront=ring('rb');
     }
   }
-  const frameStops=isCh
-    ?`<stop offset="0" stop-color="#fff2a8"/><stop offset=".35" stop-color="#ffb3ec"/><stop offset=".7" stop-color="#8b45e6"/><stop offset="1" stop-color="#2a0a5e"/>`
-    :`<stop offset="0" stop-color="${P[0]}"/><stop offset=".3" stop-color="${P[1]}"/><stop offset=".7" stop-color="${P[2]}"/><stop offset="1" stop-color="${P[3]}"/>`;
-  return `<svg viewBox="-14 -8 92 82" xmlns="http://www.w3.org/2000/svg" style="overflow:visible"><defs>
-    <linearGradient id="m${u}" x1="0" y1="0" x2="1" y2="1">${frameStops}</linearGradient>
-    <linearGradient id="g${u}" x1="0" y1="0" x2=".35" y2="1">${plateStops}</linearGradient>
-    <linearGradient id="w${u}" x1="1" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${isCh?'#ffd6f5':P[0]}"/><stop offset=".5" stop-color="${isCh?'#b86bff':P[1]}"/><stop offset="1" stop-color="${isCh?'#3b0f78':P[2]}"/></linearGradient>
-    <linearGradient id="j${u}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset=".5" stop-color="${isCh?'#ffe27a':P[1]}"/><stop offset="1" stop-color="${isCh?'#ff6ad5':P[2]}"/></linearGradient>
+  const yc=S.yGrad?`url(#y${u})`:(S.yc||'#fff');
+  return `<svg viewBox="-16 -12 96 90" xmlns="http://www.w3.org/2000/svg" style="overflow:visible"><defs>
+    <linearGradient id="m${u}" x1="0" y1="0" x2="1" y2="1">${frame}</linearGradient>
+    <linearGradient id="g${u}" x1="0" y1="0" x2=".35" y2="1">${plate}</linearGradient>
+    <linearGradient id="w${u}" x1="1" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${W[0]}"/><stop offset=".5" stop-color="${W[1]}"/><stop offset="1" stop-color="${W[2]}"/></linearGradient>
+    <linearGradient id="j${u}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${G[0]}"/><stop offset=".5" stop-color="${G[1]}"/><stop offset="1" stop-color="${G[2]}"/></linearGradient>
     <linearGradient id="s${u}" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".75"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
-    <filter id="b${u}" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="4"/></filter>
-    <clipPath id="c${u}"><path d="${inner}"/></clipPath></defs>
-    ${fxBack}${wings}
-    <path d="${sh}" fill="url(#m${u})" stroke="${isCh?'#2a0a5e':P[3]}" stroke-width="2" stroke-linejoin="round"/>
+    ${S.yGrad?`<linearGradient id="y${u}" x1="0" y1="0" x2="0" y2="1">${S.yGrad}</linearGradient>`:''}
+    <linearGradient id="r${u}" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#ffe27a"/><stop offset=".5" stop-color="#ffffff"/><stop offset="1" stop-color="#ff9be3"/></linearGradient>
+    <filter id="b${u}" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="4.5"/></filter>
+    <clipPath id="c${u}"><path d="${inner}"/></clipPath>
+    <clipPath id="rt${u}"><rect x="-30" y="-30" width="124" height="70"/></clipPath><clipPath id="rb${u}"><rect x="-30" y="40" width="38" height="60"/><rect x="56" y="40" width="40" height="60"/></clipPath></defs>
+    ${back}${ringBack}${wings}
+    <path d="${sh}" fill="url(#m${u})" stroke="${edge}" stroke-width="2" stroke-linejoin="round"/>
     <path d="${sh}" fill="none" stroke="rgba(255,255,255,.45)" stroke-width="1" transform="translate(32 32.5) scale(.93) translate(-32 -32.5)"/>
     <path d="${inner}" fill="url(#g${u})"/>
-    <g clip-path="url(#c${u})"><path d="M10 10 L54 10 L10 38 Z" fill="rgba(255,255,255,.25)"/>${facets}${sweep}</g>
+    <g clip-path="url(#c${u})"><path d="M10 10 L54 10 L10 38 Z" fill="rgba(255,255,255,.22)"/>${facets}${sweep}</g>
     <path d="${inner}" fill="none" stroke="rgba(0,0,0,.28)" stroke-width="1.2"/>
     <g stroke-linecap="round" fill="none">
-      ${fx?`<path d="${Y}" stroke="${isCh?'#ffd1f4':'#cfe9ff'}" stroke-width="8" opacity=".55"/>`:''}
-      <path d="${Y}" stroke="rgba(0,0,0,.3)" stroke-width="5.4" transform="translate(0 1.3)"/>
-      <path d="${Y}" stroke="#fff" stroke-width="4.6"/></g>
-    ${deco}${fxFront}</svg>`;
+      ${fx?`<path d="${Y}" stroke="${S.yGlow?S.yGlow:S.plateStops?'#c9ffe9':(S.yc?'#ffe9a0':(S.rainbow?'#ffd1f4':'#cfe9ff'))}" stroke-width="${S.yGrad?5.6:8}" opacity="${S.yGrad?.3:.5}"/>`:''}
+      <path d="${Y}" stroke="rgba(0,0,0,${S.yGrad?.18:.3})" stroke-width="${S.yGrad?4.8:5.4}" transform="translate(0 ${S.yGrad?1:1.3})"/>
+      <path d="${Y}" stroke="${yc}" stroke-width="${S.yGrad?4.2:4.6}"/>${S.yGrad?`<path d="M30.6 29.3 L26.4 24.4" stroke="rgba(255,255,255,.7)" stroke-width="1.1"/>`:''}</g>
+    ${deco}${ringFront}${front}</svg>`;
 }
+function badgeSVG(t,isCh){return badge(isCh?'챌린저':(ST[t[0]]?t[0]:'?'));}
 
 let ME=null,ALL={},mode='practice',started=false,lastRes=null;
 let saveChain=Promise.resolve(),lastWrite=0;
@@ -824,7 +838,7 @@ function openLevels(m){
   if(rank){
     const st=standings(),isCh=st.ch.has(ME.id),ti=tierIdx(p),t=isCh?CHAL:TIERS[ti];
     const nxt=ti<TIERS.length-1?TIERS[ti+1]:null,w=nxt?Math.min(100,(p-TIERS[ti][1])/(nxt[1]-TIERS[ti][1])*100):100;
-    $('lvMe').innerHTML=`<div class="lvme"><div class="badge">${badgeSVG(t,isCh)}</div><div style="flex:1;min-width:0"><div class="nm">${t[0]} <b>${p}</b>점</div><div class="bar"><i style="width:${w}%"></i></div><small>${nxt?`${nxt[0]}까지 ${nxt[1]-p}점`:isCh?`챌린저 · 전교 ${st.placed.findIndex(x=>x.id===ME.id)+1}위`:'상위 5% 안에 들면 챌린저'}</small></div></div>`;
+    $('lvMe').innerHTML=`<div class="lvme"><div class="badge">${badgeSVG(t,isCh)}</div><div style="flex:1;min-width:0"><div class="nm">${t[0]} <b>${p}</b>점</div><div class="bar"><i style="width:${w}%"></i></div><small>${nxt?`${nxt[0]}까지 ${nxt[1]-p}점`:isCh?`챌린저 · 전교 ${st.placed.findIndex(x=>x.id===ME.id)+1}위`:'전체 상위 4% 안에 들면 챌린저'}</small></div></div>`;
   }else $('lvMe').innerHTML='';
   $('lvSub').textContent=rank?'이기면 점수가 크게 오르고, 지면 조금만 깎여요. 티어는 떨어지지 않아요.':'점수에 반영되지 않아요. 마음껏 연습하세요!';
   const L=$('lvList');L.textContent='';
@@ -841,7 +855,7 @@ function openLevels(m){
         if(up)after=`<span class="after">이기면 <em>${TIERS[tierIdx(p+w)][0]} 승급!</em></span>`;
       }else{
         right=`<div class="pt none"><span class="k">랭크</span><span class="w" style="font-size:15px">불가</span></div>`;
-        after=`<span class="after no">플래티넘부터는 연습 게임에서만 할 수 있어요</span>`;b.classList.add('dim');b.disabled=true;
+        after=`<span class="after no">${TIERS[tierIdx(RANK_CAP[lv])][0]}부터는 연습 게임에서만 할 수 있어요</span>`;b.classList.add('dim');b.disabled=true;
       }
     }else right=`<span class="go">연습</span>`;
     b.innerHTML=`<div class="ic">${MARK[BLACK]}</div><div class="tx"><b>${LVN[lv]}</b>${pips}<span>${LVD[lv]}</span></div>${right}${after}`;
@@ -948,7 +962,7 @@ function setupResult(res){
       const pb=c.b!=null?c.b:before.points;
       let note='';
       if(res<0&&rec.points-pb>-GAIN[c.lv][1])note='티어 보호';
-      if(res>0&&rec.points===pb)note='플래티넘부터 쉬움은 점수 없음';
+      if(res>0&&rec.points===pb)note=`${TIERS[tierIdx(RANK_CAP[c.lv]||0)][0]}부터 ${LVN[c.lv]}은 점수 없음`;
       if(winGain(level,rec.points)===0)A.textContent='다른 난이도 고르기';
       tierCard(D,{from:pb,to:rec.points,chB:wasCh,chA:isCh,rank,label:`내 티어 · ${$('oInfo').textContent}`,note,delta:true});
     }
@@ -972,7 +986,7 @@ function tierCard(D,o){
     tN.textContent=t[0];tN.style.color=t[3];tP.textContent=p;tP.style.color=t[3];
     tF.style.width=pct(p)+'%';
     if(i<TIERS.length-1)tX.innerHTML=`<b>${TIERS[i+1][0]}</b>까지 <b>${TIERS[i+1][1]-p}점</b>`+(o.rank?` · 전교 ${o.rank}위`:'');
-    else tX.innerHTML=ch?`챌린저 · 전교 <b>${o.rank}위</b>`:`다이아 · 상위 5% 안에 들면 <b>챌린저</b>`+(o.rank?` · 전교 ${o.rank}위`:'');
+    else tX.innerHTML=ch?`챌린저 · 전교 <b>${o.rank}위</b>`:`마스터 · 전체 상위 4% 안에 들면 <b>챌린저</b>`+(o.rank?` · 전교 ${o.rank}위`:'');
   };
   paint(o.from,false);
   if(d<0){tG.style.width=pct(o.from)+'%';}
