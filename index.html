@@ -584,11 +584,11 @@ const LVD=['','아무 데나 두는 초보 바이러스','좋은 자리를 아�
 // [이름, 최소 점수, 밝은 색, 진한 색]
 const TIERS=[['아이언',0,'#c9ced6','#5d626b'],['브론즈',100,'#f0b27a','#8f4f22'],['실버',200,'#f4f7fb','#7f8ca0'],['골드',300,'#ffe58a','#b77a00'],['플래티넘',400,'#9ff5e2','#16897a'],['다이아',500,'#b5dcff','#2560c9']];
 const CHAL=['챌린저',null,'#ffb8f0','#8a2bd6'];
-const GAIN={1:[10,10],2:[40,15],3:[60,15],4:[100,15]};   // [승리, 패배]
+const GAIN={1:[25,10],2:[40,15],3:[60,15],4:[100,15]};   // [승리, 패배]
 const START=[0,100,200,300];                            // 배치 승수별 시작 점수
 const CH_RATE=.05,CH_MIN=500;
 function tierIdx(p){let k=0;for(let i=0;i<TIERS.length;i++)if(p>=TIERS[i][1])k=i;return k;}
-function winGain(lv,p){return GAIN[lv][0];}   // 모든 티어에서 쉬움도 +10점
+function winGain(lv,p){return GAIN[lv][0];}   // 모든 티어에서 쉬움도 +25점
 // [이름, 최소 점수, 대표 밝은 색, 대표 진한 색, 팔레트(밝음→어두움)]
 const PAL={
  '아이언':['#f1f3f6','#b4bac4','#6b717b','#34373e'],
