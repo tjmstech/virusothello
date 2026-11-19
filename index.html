@@ -856,6 +856,7 @@ function openLevels(m){
 function modeLabel(){if(mode==='place')return `배치 ${Math.min(3,ME.rec.placeN+(started?0:1))}/3`;return mode==='rank'?'랭크':'연습';}
 function startGame(lv,m){
   if(m)mode=m;
+  if(mode==='rank'&&ME&&ME.rec&&winGain(lv,ME.rec.points)===0){openLevels('rank');return;}
   gid++;level=lv;S=newState();busy=false;autos=0;started=false;show(null);timing=false;$('timer').className='timer off';$('tbar').style.transform='scaleX(1)';
   const lc=$('lvChip');lc.textContent=LVN[lv];lc.className='lv l'+lv;$('modeTxt').textContent=modeLabel();
   [...$('board').children].forEach(e=>{e._k=undefined;});
@@ -948,6 +949,7 @@ function setupResult(res){
       let note='';
       if(res<0&&rec.points-pb>-GAIN[c.lv][1])note='티어 보호';
       if(res>0&&rec.points===pb)note='플래티넘부터 쉬움은 점수 없음';
+      if(winGain(level,rec.points)===0)A.textContent='다른 난이도 고르기';
       tierCard(D,{from:pb,to:rec.points,chB:wasCh,chA:isCh,rank,label:`내 티어 · ${$('oInfo').textContent}`,note,delta:true});
     }
   }).catch(()=>{D.innerHTML='<div class="dl">기록 저장에 실패했어요. 메인에서 다시 확인해 주세요.</div>';})
@@ -1022,6 +1024,7 @@ $('doPw').onclick=doPw;
 $('logout').onclick=()=>{ME=null;persist();renderMain();toast('로그아웃했어요',1000);};
 $('againBtn').onclick=()=>{
   if(mode==='place'){if(ME.rec.placeN<3)startGame(ME.rec.placeLv||1,'place');else openLevels('rank');return;}
+  if(mode==='rank'&&ME&&winGain(level,ME.rec.points)===0){toast(`${TIERS[tierIdx(ME.rec.points)][0]}부터는 ${LVN[level]}을 랭크로 할 수 없어요`,1500);openLevels('rank');return;}
   startGame(level);
 };
 $('levelBtn').onclick=()=>openLevels(mode==='rank'?'rank':'practice');
