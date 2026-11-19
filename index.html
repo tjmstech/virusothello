@@ -593,7 +593,7 @@ const GAIN={1:[20,10],2:[40,15],3:[60,15],4:[100,15]};   // [승리, 패배]
 const START=[0,100,200,300];                            // 배치 승수별 시작 점수
 const CH_RATE=.05,CH_MIN=500;
 function tierIdx(p){let k=0;for(let i=0;i<TIERS.length;i++)if(p>=TIERS[i][1])k=i;return k;}
-function winGain(lv,p){return GAIN[lv][0];}   // 모든 티어에서 쉬움도 +20점
+function winGain(lv,p){return lv===1&&p>=400?0:GAIN[lv][0];}   // 쉬움은 골드(399점)까지만 랭크 가능
 // [이름, 최소 점수, 대표 밝은 색, 대표 진한 색, 팔레트(밝음→어두움)]
 const PAL={
  '아이언':['#f1f3f6','#b4bac4','#6b717b','#34373e'],
@@ -841,7 +841,7 @@ function openLevels(m){
         if(up)after=`<span class="after">이기면 <em>${TIERS[tierIdx(p+w)][0]} 승급!</em></span>`;
       }else{
         right=`<div class="pt none"><span class="k">랭크</span><span class="w" style="font-size:15px">불가</span></div>`;
-        after=`<span class="after no">실버부터는 연습 게임에서만 할 수 있어요</span>`;b.classList.add('dim');b.disabled=true;
+        after=`<span class="after no">플래티넘부터는 연습 게임에서만 할 수 있어요</span>`;b.classList.add('dim');b.disabled=true;
       }
     }else right=`<span class="go">연습</span>`;
     b.innerHTML=`<div class="ic">${MARK[BLACK]}</div><div class="tx"><b>${LVN[lv]}</b>${pips}<span>${LVD[lv]}</span></div>${right}${after}`;
@@ -947,7 +947,7 @@ function setupResult(res){
       const pb=c.b!=null?c.b:before.points;
       let note='';
       if(res<0&&rec.points-pb>-GAIN[c.lv][1])note='티어 보호';
-      if(res>0&&rec.points===pb)note='실버부터 쉬움은 점수 없음';
+      if(res>0&&rec.points===pb)note='플래티넘부터 쉬움은 점수 없음';
       tierCard(D,{from:pb,to:rec.points,chB:wasCh,chA:isCh,rank,label:`내 티어 · ${$('oInfo').textContent}`,note,delta:true});
     }
   }).catch(()=>{D.innerHTML='<div class="dl">기록 저장에 실패했어요. 메인에서 다시 확인해 주세요.</div>';})
