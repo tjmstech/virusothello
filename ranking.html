@@ -220,7 +220,8 @@ function render(){
   if(sel.options.length-1!==classes.length){sel.innerHTML='<option value="">반별 보기</option>'+classes.map(c=>`<option value="${c}">${clsName(c+'00')}</option>`).join('');}
   if(cls&&!classes.includes(cls))cls='';sel.value=cls;$('tAll').classList.toggle('on',!cls);sel.classList.toggle('on',!!cls);
   const L=$('list');L.textContent='';
-  const view=placed.filter(r=>!cls||r.id.startsWith(cls)),waiting=all.filter(r=>r.placeN<3&&(!cls||r.id.startsWith(cls)));
+  let view=placed.filter(r=>!cls||r.id.startsWith(cls));if(!cls&&!admin)view=view.slice(0,30);   // 전교 랭킹은 30명까지, 반별은 전원
+  const waiting=all.filter(r=>r.placeN<3&&(!cls||r.id.startsWith(cls)));
   if(!view.length&&!waiting.length){L.appendChild(el('div','empty',DB?'아직 기록이 없어요. 첫 번째 챌린저가 되어 보세요!':'config.js에 Firebase 주소가 없어요.'));return;}
   let lastSec='';
   view.forEach((r,i)=>{
