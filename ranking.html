@@ -50,6 +50,14 @@ button,input{font-family:var(--f)}
 .err{color:#e23a2a;font-weight:700;min-height:1em;margin-top:6px}
 .legend{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 10px;font-size:12px;font-weight:700;color:#aab2e0;margin-top:12px}
 .legend span{display:inline-flex;align-items:center;gap:4px}.legend i{width:18px;height:18px;display:inline-block}.legend i svg{width:100%;height:100%}
+.fl{display:inline-flex;align-items:center;gap:3px;font-size:12px;font-weight:900;color:#5a6aa8}
+.tools input{padding:4px 6px}
+.roster{margin-top:10px;background:#f6f8ff;border:2px solid #dfe4fb;border-radius:12px;padding:8px 10px;font-size:13px;color:#2c4a6e}
+.roster summary{font-weight:900;cursor:pointer}
+.rrow{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:8px}
+.rrow input{font-size:14px;padding:5px 8px;border:2px solid #cfd6fa;border-radius:8px}
+.rnote{font-size:12px;color:#6a7ab0;margin-top:4px;line-height:1.45}
+.rmsg{margin-top:8px;font-weight:700;min-height:1.2em;white-space:pre-wrap}
 </style>
 </head>
 <body>
@@ -81,10 +89,19 @@ button,input{font-family:var(--f)}
       <div><b>관리자 모드</b> · 학생마다 버튼이 나와요.</div>
       <div style="margin-top:4px;line-height:1.6">
         <b>비번 초기화</b>: 학생이 같은 학번·이름으로 새 비밀번호를 정해 다시 들어올 수 있어요. 점수와 티어는 그대로예요.<br>
-        <b>점수 저장</b>: 점수를 직접 고쳐요. <b>삭제</b>: 계정 기록을 지워요(되돌릴 수 없어요).
+        <b>저장</b>: 이름·점수·승·패를 직접 고쳐요. 배치고사 중인 계정은 저장하면 배치 완료로 바뀌어 티어가 보여요. <b>삭제</b>: 계정 기록을 지워요(되돌릴 수 없어요).
       </div>
       <button class="b gray" id="logoutBtn" style="margin-top:8px">관리자 모드 끄기</button>
       <div class="err" id="admErr"></div>
+      <details class="roster" id="rosterBox">
+        <summary>학생 명단 관리</summary>
+        <div class="rnote">명단에 있는 학번 + 이름으로만 게임을 시작하거나 가입할 수 있어요. 두 게임이 같은 명단을 써요.</div>
+        <div class="rrow"><b>명단 파일 올리기</b><input type="file" id="rosFile" accept=".json,application/json"><button class="b red" id="rosUp">올리기</button></div>
+        <div class="rnote">roster.json을 고르고 올리면 기존 명단을 통째로 바꿔요.</div>
+        <div class="rrow"><b>학번 조회·수정</b><input id="rosId" inputmode="numeric" maxlength="5" placeholder="학번 5자리" style="width:96px"><button class="b" id="rosLook">조회</button></div>
+        <div class="rrow"><input id="rosName" placeholder="이름 (예: 홍길동)" style="width:120px"><button class="b" id="rosAdd">이 학번에 이름 추가</button><button class="b red" id="rosDel">이 학번 삭제</button></div>
+        <div class="rmsg" id="rosMsg"></div>
+      </details>
     </div>
   </div>
 </div>
@@ -229,10 +246,20 @@ function render(){
 function tools(r){
   const t=el('div','tools');
   const rs=el('button','b yel','비번 초기화');rs.onclick=()=>arm(rs,'정말 초기화?',()=>call('PATCH','/vo/players/'+r.id,{uid:'',gen:(r.gen||0)+1,cur:null}));
-  const inp=el('input');inp.type='number';inp.value=r.points;
-  const sv=el('button','b','점수 저장');sv.onclick=()=>{const v=Math.floor(+inp.value);if(!(v>=0&&v<=100000)){admErr('점수는 0~100000 사이 숫자예요.');return;}call('PATCH','/vo/players/'+r.id,{points:v});};
+  const lab=(txt,inp)=>{const w=el('label','fl');w.append(el('span','',txt),inp);return w;};
+  const mk=(type,val,w)=>{const i=el('input');i.type=type;i.value=val;i.style.width=w;return i;};
+  const nm=mk('text',r.name||'','96px');nm.maxLength=30;
+  const pt=mk('number',r.points||0,'72px'),wn=mk('number',r.wins||0,'54px'),ls=mk('number',Math.max(0,(r.games||0)-(r.wins||0)),'54px');
+  const sv=el('button','b','저장');sv.onclick=()=>{
+    const name=nm.value.replace(/\s+/g,''),p=Math.floor(+pt.value),w=Math.floor(+wn.value),l=Math.floor(+ls.value);
+    if(!name||name.length>30){admErr('이름은 1~30자로 적어 주세요.');return;}
+    if(!(p>=0&&p<=100000)){admErr('점수는 0~100000 사이 숫자예요.');return;}
+    if(!(w>=0&&l>=0)){admErr('승·패는 0 이상 숫자예요.');return;}
+    const body={name,points:p,wins:w,games:w+l};
+    if((r.placeN||0)<3)Object.assign(body,{placeN:3,placeW:Math.min(3,r.placeW||0),cur:null});   // 배치고사 중이면 배치 완료로 바꿔 티어가 보이게 해요
+    call('PATCH','/vo/players/'+r.id,body);};
   const del=el('button','b red','삭제');del.onclick=()=>arm(del,'한 번 더 누르면 삭제',()=>call('DELETE','/vo/players/'+r.id));
-  t.append(rs,inp,sv,del);return t;
+  t.append(lab('이름',nm),lab('점수',pt),lab('승',wn),lab('패',ls),sv,rs,del);return t;
 }
 function arm(b,txt,fn){if(b.dataset.arm){delete b.dataset.arm;fn();}else{const o=b.textContent;b.dataset.arm=1;b.textContent=txt;setTimeout(()=>{if(b.dataset.arm){delete b.dataset.arm;b.textContent=o;}},3000);}}
 function admErr(t){$('admErr').textContent=t||'';}
@@ -273,6 +300,33 @@ $('loginBtn').onclick=async()=>{
 $('pw').addEventListener('keydown',e=>{if(e.key==='Enter')$('loginBtn').click();});
 $('logoutBtn').onclick=()=>{token=null;admin=false;$('adminBar').style.display='none';$('admBtn').style.display='inline-block';document.body.classList.remove('admin');render();};
 connect();
+
+/* ---- 학생 명단 관리 (관리자) ---- */
+(function(){
+  const msg=t=>{$('rosMsg').textContent=t||'';};
+  const req=async(method,path,body)=>{const r=await fetch(DB+path+'.json?auth='+encodeURIComponent(token),{method,headers:{'Content-Type':'application/json'},body:body===undefined?undefined:JSON.stringify(body)});
+    if(r.status===401||r.status===403)throw new Error('권한이 없어요. 관리자 로그인과 Firebase 규칙을 확인해 주세요.');if(!r.ok)throw new Error('요청 실패 ('+r.status+')');return r.json();};
+  const sid=()=>{const v=$('rosId').value.trim();if(!/^\d{5}$/.test(v)){msg('학번 5자리를 적어 주세요.');return null;}return v;};
+  $('rosUp').onclick=async()=>{
+    const f=$('rosFile').files[0];if(!f){msg('roster.json 파일을 먼저 골라 주세요.');return;}
+    let d;try{d=JSON.parse(await f.text());}catch(e){msg('JSON 파일을 읽을 수 없어요.');return;}
+    if(d&&d.roster)d=d.roster;
+    const ids=Object.keys(d||{}).filter(k=>/^\d{5}$/.test(k));
+    if(!ids.length){msg('명단 형식이 아니에요.');return;}
+    const b=$('rosUp');if(!b.dataset.arm){b.dataset.arm=1;b.textContent=`${ids.length}명으로 바꿀까요? 한 번 더`;setTimeout(()=>{delete b.dataset.arm;b.textContent='올리기';},4000);return;}
+    delete b.dataset.arm;b.textContent='올리는 중…';
+    try{await req('PUT','/roster',d);msg(`명단을 올렸어요. 총 ${ids.length}개 학번이에요.`);}catch(e){msg(e.message);}
+    b.textContent='올리기';
+  };
+  $('rosLook').onclick=async()=>{const id=sid();if(!id)return;try{const v=await req('GET','/roster/'+id);msg(v?`${id}: ${Object.keys(v).join(', ')}`:`${id}: 명단에 없어요`);}catch(e){msg(e.message);}};
+  $('rosAdd').onclick=async()=>{const id=sid();if(!id)return;const n=$('rosName').value.replace(/\s+/g,'');
+    if(!n||n.length>30||/[.$#\[\]\/]/.test(n)){msg('이름을 1~30자로 적어 주세요. 기호 . $ # [ ] / 는 쓸 수 없어요.');return;}
+    try{await req('PATCH','/roster/'+id,{[n]:true});msg(`${id} ${n} 을(를) 명단에 넣었어요.`);$('rosName').value='';}catch(e){msg(e.message);}};
+  $('rosDel').onclick=async()=>{const id=sid();if(!id)return;const b=$('rosDel');
+    if(!b.dataset.arm){b.dataset.arm=1;b.textContent='정말 삭제? 한 번 더';setTimeout(()=>{delete b.dataset.arm;b.textContent='이 학번 삭제';},3000);return;}
+    delete b.dataset.arm;b.textContent='이 학번 삭제';
+    try{await req('DELETE','/roster/'+id);msg(`${id} 을(를) 명단에서 지웠어요. 이제 이 학번으로는 시작·가입할 수 없어요.`);}catch(e){msg(e.message);}};
+})();
 </script>
 </body>
 </html>

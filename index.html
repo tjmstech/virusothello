@@ -344,7 +344,7 @@ h1 span{color:#b98cff}
     <div class="sub">처음이면 이 정보로 자동 가입돼요.</div>
     <div class="form">
       <label>학번 (5자리)<input id="fId" inputmode="numeric" maxlength="5" autocomplete="off" placeholder="예: 30215"></label>
-      <label>이름<input id="fName" maxlength="6" autocomplete="off" placeholder="예: 홍길동"></label>
+      <label>이름<input id="fName" maxlength="30" autocomplete="off" placeholder="예: 홍길동"></label>
       <label>비밀번호 (숫자 4자리)<input id="fPin" type="password" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="••••"></label>
     </div>
     <div class="err" id="fErr"></div>
@@ -773,14 +773,20 @@ function errMsg(e){const m=String(e&&e.message||e);
   if(/Failed to fetch|NetworkError|Load failed/.test(m))return '인터넷 연결을 확인해 주세요.';
   return m.length<60?m:'문제가 생겼어요. 다시 시도해 주세요.';}
 async function doLogin(){
-  const id=$('fId').value.trim(),name=$('fName').value.trim(),pin=$('fPin').value.trim(),E=$('fErr');E.textContent='';
+  const id=$('fId').value.trim(),raw=$('fName').value.replace(/\s+/g,''),pin=$('fPin').value.trim(),E=$('fErr');E.textContent='';
   if(!/^\d{5}$/.test(id)){E.textContent='학번 5자리를 숫자로 입력해 주세요.';return;}
-  if(!name||name.length>6){E.textContent='이름을 1~6자로 입력해 주세요.';return;}
+  if(!raw){E.textContent='이름을 입력해 주세요.';return;}
   if(!/^\d{4}$/.test(pin)){E.textContent='비밀번호는 숫자 4자리예요.';return;}
   const b=$('doLogin');b.disabled=true;b.textContent='확인 중…';
   try{
+    // 명단 확인: 명단에 있는 학번과 이름으로만 들어올 수 있어요 (전출 학생 학번은 명단에 없어요)
+    const ros=await dbGet('/roster/'+id);
+    if(!ros)throw new Error('명단에 없는 학번이에요. 학번을 다시 확인해 주세요.');
+    const ks=Object.keys(ros).filter(k=>ros[k]===true);
+    const name=ks.find(k=>k===raw)||ks.find(k=>k.toLowerCase()===raw.toLowerCase());
+    if(!name)throw new Error('학번과 이름이 맞지 않아요.');
     let rec=await dbGet('/vo/players/'+id);
-    if(rec&&rec.name!==name)throw new Error('학번과 이름이 맞지 않아요.');
+    // 이름 확인은 명단 기준이에요. 관리자가 랭킹 표시 이름을 바꿔도 학생은 명단 이름 + 비밀번호로 들어올 수 있어요.
     ME={id};
     const cred={password:pwOf(pin),returnSecureToken:true};
     const signUpOrIn=async email=>{try{return await idt('accounts:signUp',Object.assign({email},cred));}catch(e){if(/EMAIL_EXISTS/.test(e.message))return await idt('accounts:signInWithPassword',Object.assign({email},cred));throw e;}};
