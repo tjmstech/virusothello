@@ -221,7 +221,8 @@ function render(){
   if(cls&&!classes.includes(cls))cls='';sel.value=cls;$('tAll').classList.toggle('on',!cls);sel.classList.toggle('on',!!cls);
   const L=$('list');L.textContent='';
   let view=placed.filter(r=>!cls||r.id.startsWith(cls));if(!cls&&!admin)view=view.slice(0,30);   // 전교 랭킹은 30명까지, 반별은 전원
-  const waiting=all.filter(r=>r.placeN<3&&(!cls||r.id.startsWith(cls)));
+  // 배치고사 진행 중 명단: 전교 보기에서는 숨기고 반별 보기에서만 보여요 (관리자는 전교에서도 보여요)
+  const waiting=(!cls&&!admin)?[]:all.filter(r=>r.placeN<3&&(!cls||r.id.startsWith(cls)));
   if(!view.length&&!waiting.length){L.appendChild(el('div','empty',DB?'아직 기록이 없어요. 첫 번째 챌린저가 되어 보세요!':'config.js에 Firebase 주소가 없어요.'));return;}
   let lastSec='';
   view.forEach((r,i)=>{
