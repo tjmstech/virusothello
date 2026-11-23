@@ -211,7 +211,7 @@ function render(){
   if(document.activeElement&&document.activeElement.tagName==='INPUT'&&$('list').contains(document.activeElement))return;
   const all=Object.keys(data).map(id=>Object.assign({id},data[id])).filter(r=>r&&typeof r.points==='number'&&/^\d{5}$/.test(r.id));
   const n=all.length,cap=Math.max(1,Math.floor(n*CH_RATE));
-  const placed=all.filter(r=>r.placeN>=3).sort((a,b)=>b.points-a.points||(a.t||0)-(b.t||0));
+  const placed=all.filter(r=>r.placeN>=3).sort((a,b)=>b.points-a.points||(b.wins||0)-(a.wins||0)||((a.games||0)-(a.wins||0))-((b.games||0)-(b.wins||0))||(a.t||0)-(b.t||0))   /* 같은 점수면: 승수 많은 순 → 패수 적은 순 → 먼저 도달한 순 */;
   const ch=new Set(placed.filter(r=>r.points>=CH_MIN).slice(0,cap).map(r=>r.id));
   placed.forEach((r,i)=>r.rank=i+1);
   $('cnt').textContent=`가입 ${n}명 · 챌린저 정원 ${cap}명`;
