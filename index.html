@@ -289,6 +289,10 @@ h1 span{color:#b98cff}
 .combo b{font-size:26px;margin-right:2px}
 .combo.go{animation:combo 1.5s cubic-bezier(.2,.8,.2,1) forwards}
 @keyframes combo{0%{opacity:0;transform:translate(-50%,10px) scale(.5)}14%{opacity:1;transform:translate(-50%,0) scale(1.12)}24%{transform:translate(-50%,0) scale(1)}78%{opacity:1;transform:translate(-50%,-4px) scale(1)}100%{opacity:0;transform:translate(-50%,-14px) scale(.96)}}
+.bancard{text-align:center}
+.banico{width:64px;height:64px;margin:4px auto 8px}.banico svg{width:100%;height:100%}
+.bantx{font-weight:800;font-size:16px;line-height:1.6;color:#2a3170;margin-top:6px}
+.bantx2{font-size:14px;line-height:1.6;color:#5a6aa8;margin:10px 0 16px}
 </style>
 </head>
 <body>
@@ -342,6 +346,16 @@ h1 span{color:#b98cff}
       </div>
       <button id="logout" class="u lo">로그아웃</button>
     </div>
+  </div>
+</div>
+
+<div class="screen" id="ban">
+  <div class="card bancard">
+    <div class="banico"><svg viewBox="0 0 48 48"><circle cx="24" cy="24" r="20" fill="#fff4f2" stroke="#e23a4a" stroke-width="4"/><rect x="21" y="12" width="6" height="16" rx="3" fill="#e23a4a"/><circle cx="24" cy="34.5" r="3.4" fill="#e23a4a"/></svg></div>
+    <h2>계정 이용이 잠시 멈췄어요</h2>
+    <div class="bantx">선생님 확인이 필요한 기록이 있어서<br>이 계정은 지금 게임을 할 수 없어요.</div>
+    <div class="bantx2">확인이 끝나면 다시 할 수 있어요.<br>궁금한 점은 선생님께 직접 이야기해 주세요.</div>
+    <button class="btn sec" id="banOk">처음 화면으로</button>
   </div>
 </div>
 
@@ -432,6 +446,8 @@ const $=id=>document.getElementById(id);
    ===================================================================== */
 const N=8,BLACK=1,WHITE=2,BLOCK=3,DIRS=[[-1,-1],[0,-1],[1,-1],[-1,0],[1,0],[-1,1],[0,1],[1,1]];
 const other=p=>3-p;
+// 시드가 있는 난수: 같은 시드면 같은 판·같은 컴퓨터 수가 나와서, 나중에 기록을 그대로 다시 둬 보며 검증할 수 있어요
+function rng32(a){a>>>=0;return function(){a=(a+0x6D2B79F5)>>>0;let t=a;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296;};}
 function newState(rnd=Math.random){
   for(;;){
     const cells=new Array(64).fill(0);
@@ -511,6 +527,7 @@ function aiMove(s,level,rnd=Math.random){
       'remote' 온라인 상대 (나중에 추가: 상대가 둔 칸 번호를 받아 play(i) 호출)
    ===================================================================== */
 const TURN_SEC=15;
+let seed=0,aiRnd=Math.random,mv='',tms=[],tTurn=0,logId=null,logP=Promise.resolve();
 let S=null,level=1,busy=false,tLeft=0,tLast=0,timing=false,autos=0,gid=0,quitArm=0;
 let control={[BLACK]:'ai',[WHITE]:'human'};   // 컴퓨터 대전: 사람은 항상 항체(흰 돌)
 const names={[BLACK]:'바이러스',[WHITE]:'항체'};
@@ -693,6 +710,7 @@ function badge(key){
 }
 function badgeSVG(t,isCh){return badge(isCh?'챌린저':(ST[t[0]]?t[0]:'?'));}
 
+let BAN={};
 let ME=null,ALL={},mode='practice',started=false,lastRes=null;
 let saveChain=Promise.resolve(),lastWrite=0;
 const emailOf=(id,gen)=>`vo${id}.${gen}@tjmstech.github.io`;
@@ -713,6 +731,7 @@ async function dbWrite(method,path,body){const t=await token();const r=await fet
 // 기록 저장: 순서대로 하나씩, 서버 규칙(4초 간격)에 맞춰 기다렸다가 저장합니다
 function save(fn){
   const job=saveChain.then(async()=>{
+    await logP;   // 판 기록이 먼저 서버에 남아야 점수가 오를 수 있어요
     const patch=fn(ME.rec);if(!patch||!Object.keys(patch).length)return ME.rec;
     const wait=lastWrite+4300-Date.now();if(wait>0)await new Promise(r=>setTimeout(r,wait));
     const body=Object.assign({},patch,{t:{'.sv':'timestamp'}});
@@ -728,7 +747,7 @@ function save(fn){
   return job;
 }
 function standings(){
-  const arr=Object.keys(ALL||{}).map(id=>Object.assign({id},ALL[id])).filter(r=>r&&typeof r.points==='number');
+  const arr=Object.keys(ALL||{}).map(id=>Object.assign({id},ALL[id])).filter(r=>r&&typeof r.points==='number'&&!BAN[r.id]);   // 이용 정지된 계정은 순위에서 빠져요
   const n=arr.length,cap=Math.max(1,Math.floor(n*CH_RATE));
   const placed=arr.filter(r=>r.placeN>=3).sort((a,b)=>b.points-a.points||(b.wins||0)-(a.wins||0)||((a.games||0)-(a.wins||0))-((b.games||0)-(b.wins||0))||(a.t||0)-(b.t||0))   /* 같은 점수면: 승수 많은 순 → 패수 적은 순 → 먼저 도달한 순 */;
   const ch=new Set(placed.filter(r=>r.points>=CH_MIN).slice(0,cap).map(r=>r.id));
@@ -737,7 +756,7 @@ function standings(){
 function tierOf(rec,st){if(!rec||rec.placeN<3)return null;if(st&&st.ch.has(ME&&ME.rec===rec?ME.id:rec.id))return CHAL;return TIERS[tierIdx(rec.points)];}
 
 /* ---------- 메인 화면 ---------- */
-async function refreshAll(){if(!ONLINE)return;try{ALL=await dbGet('/vo/players')||{};if(ME)ALL[ME.id]=Object.assign({},ALL[ME.id]||{},ME.rec);}catch(e){}}
+async function refreshAll(){if(!ONLINE)return;try{BAN=await dbGet('/vo/ban').catch(()=>({}))||{};ALL=await dbGet('/vo/players')||{};if(ME)ALL[ME.id]=Object.assign({},ALL[ME.id]||{},ME.rec);}catch(e){}}
 function renderMain(){
   const logged=!!ME;
   $('mGuest').style.display=logged?'none':'block';$('mUser').style.display=logged?'block':'none';
@@ -810,6 +829,7 @@ async function doLogin(){
       setTok(await idt('accounts:signInWithPassword',Object.assign({email:emailOf(id,rec.gen||0)},cred)));
       if(rec.uid!==ME.uid)throw new Error('계정 정보가 맞지 않아요. 선생님께 초기화를 부탁하세요.');
     }
+    if(await isBanned(id)){ME.rec=rec;persist();$('fPin').value='';showBan();return;}
     ME.rec=rec;persist();$('fPin').value='';
     await afterLogin();
   }catch(e){ME=null;persist();E.textContent=errMsg(e);}
@@ -823,6 +843,9 @@ async function afterLogin(){
   }
   await goMain();
 }
+// ---- 계정 이용 정지 (선생님이 랭킹창 관리자 모드에서 걸고 풀어요) ----
+async function isBanned(id){try{return !!(await dbGet('/vo/ban/'+id));}catch(e){return false;}}
+function showBan(){ME=null;renderMain();show('ban');}
 async function autoLogin(){
   let saved=null;try{saved=JSON.parse(localStorage.getItem('voAuth')||'null');}catch(e){}
   if(!ONLINE||!saved||!saved.refresh)return;
@@ -831,6 +854,7 @@ async function autoLogin(){
     await token();
     const rec=await dbGet('/vo/players/'+ME.id);
     if(!rec||rec.uid!==ME.uid){ME=null;persist();toast('계정이 초기화되었어요. 다시 로그인해 주세요.',2000);renderMain();return;}
+    if(await isBanned(ME.id)){showBan();return;}
     ME.rec=rec;await afterLogin();
   }catch(e){ME=null;persist();renderMain();}
 }
@@ -884,7 +908,7 @@ function modeLabel(){if(mode==='place')return `배치 ${Math.min(3,ME.rec.placeN
 function startGame(lv,m){
   if(m)mode=m;
   if(mode==='rank'&&ME&&ME.rec&&winGain(lv,ME.rec.points)===0){openLevels('rank');return;}
-  gid++;level=lv;S=newState();busy=false;autos=0;started=false;show(null);timing=false;$('timer').className='timer off';$('tbar').style.transform='scaleX(1)';
+  gid++;level=lv;seed=(Math.random()*4294967296)>>>0;S=newState(rng32(seed));aiRnd=rng32(seed^0x9E3779B9);mv='';tms=[];logId=null;busy=false;autos=0;started=false;show(null);timing=false;$('timer').className='timer off';$('tbar').style.transform='scaleX(1)';
   const lc=$('lvChip');lc.textContent=LVN[lv];lc.className='lv l'+lv;$('modeTxt').textContent=modeLabel();
   [...$('board').children].forEach(e=>{e._k=undefined;});
   render();tip('');
@@ -900,9 +924,12 @@ function beginGame(){
   started=true;
   if(mode!=='practice'&&ME){
     const lv=level,m=mode;
+    // 판 기록 시작 (서버 시각·난이도·시드). 끝나면 수순과 생각 시간을 덧붙여요
+    const g=logId=Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+    logP=dbWrite('PUT','/vo/logs/'+ME.id+'/'+g,{s:{'.sv':'timestamp'},lv,k:m==='place'?'p':'r',seed}).catch(()=>{});
     save(rec=>{
-      if(m==='place'){const n=rec.placeN+1,p={placeN:n,cur:{k:'p',lv,b:rec.points}};if(n===3)p.points=START[rec.placeW];return p;}
-      const b=rec.points;return {points:Math.max(TIERS[tierIdx(b)][1],b-GAIN[lv][1]),games:(rec.games||0)+1,cur:{k:'r',lv,b}};
+      if(m==='place'){const n=rec.placeN+1,p={placeN:n,cur:{k:'p',lv,b:rec.points,g}};if(n===3)p.points=START[rec.placeW];return p;}
+      const b=rec.points;return {points:Math.max(TIERS[tierIdx(b)][1],b-GAIN[lv][1]),games:(rec.games||0)+1,cur:{k:'r',lv,b,g}};
     });
   }
   nextTurn();
@@ -910,14 +937,16 @@ function beginGame(){
 function nextTurn(){
   if(S.over){timing=false;$('timer').className='timer off';finish();return;}
   const who=control[S.turn];
-  if(who==='human'){tLeft=TURN_SEC;tLast=performance.now();timing=true;tip('내 차례! 점선 동그라미 칸에 항체를 놓으세요.');render();}
+  if(who==='human'){tLeft=TURN_SEC;tLast=performance.now();tTurn=tLast;timing=true;tip('내 차례! 점선 동그라미 칸에 항체를 놓으세요.');render();}
   else if(who==='ai'){timing=false;$('timer').className='timer off';$('tbar').style.transform='scaleX(1)';tip('바이러스가 생각 중…');render();
-    const g=gid;setTimeout(()=>{if(g!==gid)return;const m=aiMove(S,level);if(m>=0)play(m);},550);}
+    const g=gid;setTimeout(()=>{if(g!==gid)return;const m=aiMove(S,level,aiRnd);if(m>=0)play(m);},550);}
   else{timing=false;tip('상대를 기다리는 중…');render();}   // 'remote' (친선전용 자리)
 }
 // 사람, 컴퓨터, 원격 상대 모두 이 함수 하나로 둡니다
+const B64='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
 function play(i){
   const who=S.turn,r=applyMove(S,i);if(!r)return false;
+  mv+=B64[i];if(control[who]==='human')tms.push(Math.round((performance.now()-tTurn)/100));   // 수순(한 글자=한 칸), 내 생각 시간(0.1초 단위)
   timing=false;busy=true;const g=gid;
   const x=i%N,y=(i-x)/N,dist=a=>Math.max(Math.abs(a%N-x),Math.abs(Math.floor(a/N)-y)),order=r.flipped.slice().sort((a,b)=>dist(a)-dist(b)),maxD=dist(order[order.length-1]);
   S=r.state;render({placed:i,flipped:r.flipped,order});
@@ -945,6 +974,8 @@ function finish(){
   $('oW').textContent=w;$('oB').textContent=b;
   $('oInfo').textContent=`${LVN[level]} · 돌 차이 ${Math.abs(w-b)}개`+(autos?` · 시간 초과 ${autos}번`:'');
   render();if(res>0){tone(523,.12,'triangle',.1);tone(659,.12,'triangle',.1,.12);tone(784,.25,'triangle',.1,.24);}else if(res<0){tone(300,.2,'sawtooth',.06);tone(220,.35,'sawtooth',.06,.2);}
+  if(logId&&ME&&mode!=='practice'){const w2=count(S.cells,WHITE),b2=count(S.cells,BLACK);
+    const lid=logId,uid0=ME.id;logP=logP.then(()=>dbWrite('PATCH','/vo/logs/'+uid0+'/'+lid,{e:{'.sv':'timestamp'},r:res,mv,tm:tms.join(','),sc:w2+'-'+b2,au:autos})).catch(()=>{});logId=null;}
   setupResult(res);
   const g2=gid;setTimeout(()=>{if(g2===gid)show('over');},700);
 }
@@ -1037,9 +1068,10 @@ function tick(now){
   }
   tLast=now;requestAnimationFrame(tick);
 }
-function show(id){for(const k of['main','login','pw','level','how','over'])$(k).style.display=k===id?'flex':'none';}
+function show(id){for(const k of['main','login','pw','level','how','over','ban'])$(k).style.display=k===id?'flex':'none';}
 document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>show(b.dataset.go));
 $('goLogin').onclick=()=>{$('fErr').textContent='';show('login');setTimeout(()=>$('fId').focus(),50);};
+$('banOk').onclick=()=>{show('main');renderMain();};
 $('doLogin').onclick=doLogin;
 $('fPin').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
 $('goPractice0').onclick=()=>openLevels('practice');
