@@ -409,7 +409,7 @@ h1 span{color:#b98cff}
       5. 둘 다 더 둘 곳이 없으면 끝. <b>돌이 많은 쪽</b>이 이겨요.<br>
       6. <b>배치고사 3판</b>으로 시작 티어가 정해져요. 이기면 다음 판이 한 단계 어려워져요.<br>
       7. <b>랭크 게임</b>에서 이기면 점수가 크게 오르고, 지면 조금 깎여요. 티어는 떨어지지 않아요.<br>
-      8. 600점부터 <b>마스터</b>, 마스터 중 전체 인원의 <b>상위 2%</b>만 챌린저가 될 수 있어요. 랭크 게임 도중 나가면 패배로 기록돼요.
+      8. 600점부터 <b>마스터</b>, 마스터 중 전체 인원의 <b>상위 1%</b>만 챌린저가 될 수 있어요. 랭크 게임 도중 나가면 패배로 기록돼요.
     </div>
     <div class="sub" style="text-align:left;margin:4px 2px 0">백신을 맞으면 우리 몸은 바이러스를 붙잡는 <b style="font-weight:900;color:#1f9a48">항체</b>를 미리 만들어 둬요. 이 게임의 흰 돌이 바로 그 항체예요!
     </div>
@@ -615,7 +615,7 @@ const TIERS=[['아이언',0,'#c9ced6','#5d626b'],['브론즈',100,'#f0b27a','#8f
 const CHAL=['챌린저',null,'#fff1b0','#b07a10'];
 const GAIN={1:[20,10],2:[40,15],3:[60,15],4:[100,15]};   // [승리, 패배]
 const START=[0,100,200,300];                            // 배치 승수별 시작 점수
-const CH_RATE=.02,CH_MIN=600;
+const CH_RATE=.01,CH_MIN=600;
 function tierIdx(p){let k=0;for(let i=0;i<TIERS.length;i++)if(p>=TIERS[i][1])k=i;return k;}
 // 랭크로 할 수 있는 마지막 점수: 쉬움은 골드(399점)까지, 보통은 플래티넘(499점)까지
 const RANK_CAP={1:400,2:600};   // 쉬움은 골드까지, 보통은 다이아까지
@@ -875,7 +875,7 @@ function openLevels(m){
   if(rank){
     const st=standings(),isCh=st.ch.has(ME.id),ti=tierIdx(p),t=isCh?CHAL:TIERS[ti];
     const nxt=ti<TIERS.length-1?TIERS[ti+1]:null,w=nxt?Math.min(100,(p-TIERS[ti][1])/(nxt[1]-TIERS[ti][1])*100):100;
-    $('lvMe').innerHTML=`<div class="lvme"><div class="badge">${badgeSVG(t,isCh)}</div><div style="flex:1;min-width:0"><div class="nm">${t[0]} <b>${p}</b>점</div><div class="bar"><i style="width:${w}%"></i></div><small>${nxt?`${nxt[0]}까지 ${nxt[1]-p}점`:isCh?`챌린저 · 전교 ${st.placed.findIndex(x=>x.id===ME.id)+1}위`:'전체 상위 2% 안에 들면 챌린저'}</small></div></div>`;
+    $('lvMe').innerHTML=`<div class="lvme"><div class="badge">${badgeSVG(t,isCh)}</div><div style="flex:1;min-width:0"><div class="nm">${t[0]} <b>${p}</b>점</div><div class="bar"><i style="width:${w}%"></i></div><small>${nxt?`${nxt[0]}까지 ${nxt[1]-p}점`:isCh?`챌린저 · 전교 ${st.placed.findIndex(x=>x.id===ME.id)+1}위`:'전체 상위 1% 안에 들면 챌린저'}</small></div></div>`;
   }else $('lvMe').innerHTML='';
   $('lvSub').textContent=rank?'이기면 점수가 크게 오르고, 지면 조금만 깎여요. 티어는 떨어지지 않아요.':'점수에 반영되지 않아요. 마음껏 연습하세요!';
   const L=$('lvList');L.textContent='';
@@ -1030,7 +1030,7 @@ function tierCard(D,o){
     tN.textContent=t[0];tN.style.color=t[3];tP.textContent=p;tP.style.color=t[3];
     tF.style.width=pct(p)+'%';
     if(i<TIERS.length-1)tX.innerHTML=`<b>${TIERS[i+1][0]}</b>까지 <b>${TIERS[i+1][1]-p}점</b>`+(o.rank?` · 전교 ${o.rank}위`:'');
-    else tX.innerHTML=ch?`챌린저 · 전교 <b>${o.rank}위</b>`:`마스터 · 전체 상위 2% 안에 들면 <b>챌린저</b>`+(o.rank?` · 전교 ${o.rank}위`:'');
+    else tX.innerHTML=ch?`챌린저 · 전교 <b>${o.rank}위</b>`:`마스터 · 전체 상위 1% 안에 들면 <b>챌린저</b>`+(o.rank?` · 전교 ${o.rank}위`:'');
   };
   paint(o.from,false);
   if(d<0){tG.style.width=pct(o.from)+'%';}

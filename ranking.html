@@ -108,6 +108,14 @@ button,input{font-family:var(--f)}
       </div>
       <button class="b gray" id="logoutBtn" style="margin-top:8px">관리자 모드 끄기</button>
       <div class="err" id="admErr"></div>
+      <details class="roster" id="banBox">
+        <summary>정지·삭제된 계정 관리</summary>
+        <div class="rnote">삭제한 계정은 랭킹에 안 보여서 정지 해제 버튼도 사라져요. 여기서 풀어 주세요.</div>
+        <div id="banList" class="rnote" style="margin-top:6px"></div>
+        <div class="rrow"><b>다시 시작하게 하기</b><input id="revId" inputmode="numeric" maxlength="5" placeholder="학번 5자리" style="width:96px"><button class="b" id="revBtn">새 계정으로 다시 시작</button></div>
+        <div class="rnote">정지를 풀고, 기록 0점의 새 계정을 만들어 줘요. 학생은 학번·이름 + <b>새 비밀번호</b>로 들어오면 돼요. (예전 비밀번호를 몰라도 돼요. 이미 기록이 있는 계정이면 기록이 지워지니 주의!)</div>
+        <div class="rmsg" id="banMsg"></div>
+      </details>
       <details class="roster" id="rosterBox">
         <summary>학생 명단 관리</summary>
         <div class="rnote">명단에 있는 학번 + 이름으로만 게임을 시작하거나 가입할 수 있어요. 두 게임이 같은 명단을 써요.</div>
@@ -127,7 +135,7 @@ button,input{font-family:var(--f)}
 const $=id=>document.getElementById(id);
 const C=window.COWRUN_CONFIG||{},DB=(C.databaseURL||'').replace(/\/+$/,'');
 const TIERS=[['아이언',0,'#c9ced6','#5d626b'],['브론즈',100,'#f0b27a','#8f4f22'],['실버',200,'#f4f7fb','#7f8ca0'],['골드',300,'#ffe58a','#b77a00'],['플래티넘',400,'#9ff5e2','#16897a'],['다이아',500,'#b5dcff','#2560c9'],['마스터',600,'#e0c4ff','#8a2bd6']];
-const CHAL=['챌린저',null,'#fff1b0','#b07a10'],CH_RATE=.02,CH_MIN=600;
+const CHAL=['챌린저',null,'#fff1b0','#b07a10'],CH_RATE=.01,CH_MIN=600;
 function tierIdx(p){let k=0;for(let i=0;i<TIERS.length;i++)if(p>=TIERS[i][1])k=i;return k;}
 // [이름, 최소 점수, 대표 밝은 색, 대표 진한 색, 팔레트(밝음→어두움)]
 // 티어 배지 (다이아부터 계속 움직여요)
@@ -221,7 +229,7 @@ function el(t,c,x){const e=document.createElement(t);if(c)e.className=c;if(x!=nu
 function clsName(id){return `${id[0]}학년 ${+id.slice(1,3)}반`;}
 let data={},cls='',token=null,admin=false,BAN={};
 let myId=null;try{myId=(JSON.parse(localStorage.getItem('voAuth')||'null')||{}).id||null;}catch(e){}
-$('legend').innerHTML=TIERS.map(t=>`<span><i>${badgeSVG(t)}</i>${t[0]} ${t[1]}+</span>`).join('')+`<span><i>${badgeSVG(CHAL,true)}</i>챌린저 = 마스터 중 전체 상위 2%</span>`;
+$('legend').innerHTML=TIERS.map(t=>`<span><i>${badgeSVG(t)}</i>${t[0]} ${t[1]}+</span>`).join('')+`<span><i>${badgeSVG(CHAL,true)}</i>챌린저 = 마스터 중 전체 상위 1%</span>`;
 
 function render(){
   if(document.activeElement&&document.activeElement.tagName==='INPUT'&&$('list').contains(document.activeElement))return;
@@ -292,7 +300,29 @@ async function call(method,path,body){
 }
 
 /* ---- 이용 정지 목록 ---- */
-async function loadBan(){try{BAN=await (await fetch(DB+'/vo/ban.json')).json()||{};}catch(e){BAN={};}render();}
+async function loadBan(){try{BAN=await (await fetch(DB+'/vo/ban.json')).json()||{};}catch(e){BAN={};}render();drawBanList();}
+// 정지된 계정 목록 (삭제돼서 랭킹에 없는 계정도 보여요)
+function drawBanList(){
+  const box=$('banList');if(!box)return;box.textContent='';
+  const ids=Object.keys(BAN||{}).sort();
+  if(!ids.length){box.textContent='지금 정지된 계정이 없어요.';return;}
+  ids.forEach(id=>{const row=el('div','rrow');const has=data&&data[id];
+    row.appendChild(el('span',null,id+(has?' '+(data[id].name||''):' (삭제된 계정)')));
+    const b=el('button','b yel','정지 해제');b.onclick=()=>arm(b,'정말 해제?',async()=>{await call('DELETE','/vo/ban/'+id);await loadBan();$('banMsg').textContent=id+' 정지를 풀었어요.';});
+    row.appendChild(b);box.appendChild(row);});
+}
+// 새 계정으로 다시 시작: 정지 해제 + 0점 기록(uid 비움, 새 번호) → 학생이 새 비밀번호로 들어오면 연결돼요
+$('revBtn').onclick=()=>{const id=$('revId').value.trim(),m=t=>$('banMsg').textContent=t;
+  if(!/^\d{5}$/.test(id)){m('학번 5자리를 적어 주세요.');return;}
+  arm($('revBtn'),data[id]?'기록이 지워져요! 한 번 더':'한 번 더 누르면 실행',async()=>{
+    let ros=null;try{ros=await (await fetch(DB+'/roster/'+id+'.json')).json();}catch(e){}
+    const name=ros&&Object.keys(ros).find(k=>ros[k]===true);
+    if(!name){m(id+'은(는) 명단에 없어요. 먼저 명단에 넣어 주세요.');return;}
+    await call('DELETE','/vo/ban/'+id);
+    await call('PUT','/vo/players/'+id,{name,uid:'',gen:Math.floor(Date.now()/1000),points:0,placeN:0,placeW:0,placeLv:1,games:0,wins:0,t:{'.sv':'timestamp'}});
+    if(!$('admErr').textContent){m(`${id} ${name}: 준비됐어요. 학생이 학번·이름 + 새 비밀번호 4자리로 들어오면 돼요.`);$('revId').value='';}
+    await loadBan();});
+};
 setInterval(loadBan,30000);
 
 /* ---- 판 기록 검증 (관리자) ----
